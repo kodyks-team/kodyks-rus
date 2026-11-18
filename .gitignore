@@ -1,0 +1,16 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+
+# База данных
+game.db
+*.sqlite3
+
+# Виртуальное окружение
+venv/
+.env
+
+# ОС и редакторы
+.DS_Store
+.vscode/

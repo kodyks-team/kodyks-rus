@@ -1,56 +1,110 @@
 {% extends "base.html" %}
 {% block title %}Статистика{% endblock %}
 {% block content %}
-<div class="card">
-  <h1>Моя статистика</h1>
-  <div class="grid">
-    <div class="stat"><div class="k">Рекорд</div><div class="v">{{ g.user.best_score }}</div></div>
-    <div class="stat"><div class="k">Всего действий</div><div class="v">{{ total }}</div></div>
-    <div class="stat"><div class="k">Точность</div><div class="v">{{ '%.0f'|format(good_pct) }}%</div></div>
-  </div>
 
-  <div class="bar" style="margin-top:16px">
-    <div class="seg good" style="width: {{ good_pct }}%">{{ g.user.correct_total }}</div>
-    <div class="seg bad" style="width: {{ 100 - good_pct }}%">{{ g.user.wrong_total }}</div>
+<!-- Селектор периода -->
+<div class="card" style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px;">
+  <div>
+    <h1 style="margin:0;">Моя статистика</h1>
+    <p class="muted" style="margin:4px 0 0 0;">Средний КПД за период: <b style="color:var(--good);">{{ chart_data.avg_kpi }}%</b></p>
   </div>
-  <div class="legend">
-    <span><span class="dot" style="background:var(--good)"></span>Верно: {{ g.user.correct_total }}</span>
-    <span><span class="dot" style="background:var(--bad)"></span>Ошибок: {{ g.user.wrong_total }}</span>
+  <div class="row" style="gap:8px;">
+    <a href="?period=day" class="btn {% if period == 'day' %}small{% else %}ghost small{% endif %}">День</a>
+    <a href="?period=week" class="btn {% if period == 'week' %}small{% else %}ghost small{% endif %}">Неделя</a>
+    <a href="?period=month" class="btn {% if period == 'month' %}small{% else %}ghost small{% endif %}">Месяц</a>
+    <a href="?period=year" class="btn {% if period == 'year' %}small{% else %}ghost small{% endif %}">Год</a>
   </div>
 </div>
 
-<div class="card">
-  <h3>Последние игры</h3>
-  {% if games %}
+{% if total_games == 0 %}
+  <div class="card" style="text-align:center; padding:40px 20px;">
+    <h3 class="muted">За выбранный период игр ещё нет.</h3>
+    <p class="muted">Сыграйте партию или выберите другой период.</p>
+  </div>
+{% else %}
+  <!-- Сетка из 3 диаграмм -->
+  <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; margin-top: 16px;">
+    
+    <!-- 1. Круговая (КПД) -->
+    <div class="card" style="height: 320px; display: flex; flex-direction: column;">
+      <h3 style="font-size:.95rem; text-align:center; margin-bottom:12px;">Общий КПД</h3>
+      <div style="flex:1; position:relative;">
+        <canvas id="chart-pie"></canvas>
+      </div>
+    </div>
+
+    <!-- 2. Линейная (Динамика) -->
+    <div class="card" style="height: 320px; display: flex; flex-direction: column;">
+      <h3 style="font-size:.95rem; text-align:center; margin-bottom:12px;">Динамика КПД (%)</h3>
+      <div style="flex:1; position:relative;">
+        <canvas id="chart-line"></canvas>
+      </div>
+    </div>
+
+    <!-- 3. Столбчатая (Верно/Ошибки) -->
+    <div class="card" style="height: 320px; display: flex; flex-direction: column;">
+      <h3 style="font-size:.95rem; text-align:center; margin-bottom:12px;">Результаты по играм</h3>
+      <div style="flex:1; position:relative;">
+        <canvas id="chart-bar"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <!-- Блок рейтинга -->
+  <div class="card" style="margin-top:16px;">
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+      <h3 style="margin:0;">Рейтинг</h3>
+      <a href="{{ url_for('leaderboard') }}" class="btn ghost small">Весь топ-50</a>
+    </div>
+
     <div class="table-wrap">
       <table>
         <thead>
           <tr>
-            <th>Дата</th>
-            <th>Слов</th>
-            <th>Очки</th>
-            <th>Верных действий</th>
-            <th>Ошибок</th>
+            <th>№</th>
+            <th>Имя</th>
+            <th>Макс. счёт</th>
+            <th>КПД</th>
+            <th>Всего верно</th>
+            <th>Всего ошибок</th>
           </tr>
         </thead>
         <tbody>
-        {% for g in games %}
-          <tr>
-            <td>{{ g.played_at }}</td>
-            <td>{{ g.rounds }}</td>
-            <td>
-              <b style="color:var(--accent); font-size:1.05rem;">{{ g.score }}</b>
-              <span class="muted">/ {{ g.max_score or (g.rounds * 2) }}</span>
-            </td>
-            <td style="color:var(--good); font-weight:600;">{{ g.correct }}</td>
-            <td style="color:var(--bad); font-weight:600;">{{ g.wrong }}</td>
-          </tr>
-        {% endfor %}
+          {% if show_top_gap %}
+            <tr><td colspan="6" style="text-align:center; color:var(--muted);">⋯</td></tr>
+          {% endif %}
+
+          {% for u in leaderboard %}
+            {% set global_idx = loop.index if user_index < 20 else (user_index - 7) + loop.index %}
+            {% set is_me = (u.id == g.user.id) %}
+            <tr {% if is_me %}style="background: var(--hover-row); font-weight: 600;"{% endif %}>
+              <td class="rank" style="{% if global_idx == 1 %}color: var(--rank-1);{% elif global_idx == 2 %}color: var(--rank-2);{% elif global_idx == 3 %}color: var(--rank-3);{% endif %}">{{ global_idx }}</td>
+              <td>{{ u.username }} {% if is_me %}<span style="color:var(--accent); font-size:.75rem;">(вы)</span>{% endif %}</td>
+              <td>{{ u.best_score }}</td>
+              <td>
+                {% set total_act = u.correct_total + u.wrong_total %}
+                {% set kpi = (u.correct_total / total_act * 100)|round(0)|int if total_act else 0 %}
+                <span style="color: {% if kpi >= 70 %}var(--good){% elif kpi >= 40 %}var(--fg){% else %}var(--bad){% endif %};">
+                  {{ kpi }}%
+                </span>
+              </td>
+              <td>{{ u.correct_total }}</td>
+              <td>{{ u.wrong_total }}</td>
+            </tr>
+          {% endfor %}
+
+          {% if show_bottom_gap %}
+            <tr><td colspan="6" style="text-align:center; color:var(--muted);">⋯</td></tr>
+          {% endif %}
         </tbody>
       </table>
     </div>
-  {% else %}
-    <p class="muted">Ещё не сыграно ни одной игры.</p>
-  {% endif %}
-</div>
+  </div>
+{% endif %}
+
+<!-- Передаем данные в JS -->
+<script id="chart-data" type="application/json">
+  {{ chart_data | tojson }}
+</script>
+
 {% endblock %}

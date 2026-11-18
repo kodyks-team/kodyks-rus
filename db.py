@@ -34,7 +34,7 @@ def init_db():
 
     db = sqlite3.connect(DB_PATH)
     db.executescript("""
-    CREATE TABLE IF NOT EXISTS users (
+        CREATE TABLE IF NOT EXISTS users (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         username TEXT UNIQUE NOT NULL,
         password_hash TEXT NOT NULL,
@@ -42,6 +42,7 @@ def init_db():
         best_score INTEGER NOT NULL DEFAULT 0,
         correct_total INTEGER NOT NULL DEFAULT 0,
         wrong_total INTEGER NOT NULL DEFAULT 0,
+        timezone TEXT NOT NULL DEFAULT 'Europe/Moscow',
         created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
     );
     CREATE TABLE IF NOT EXISTS games (
@@ -64,10 +65,14 @@ def init_db():
     """)
 
     # Дополнительная защита для уже существующих баз
-    columns = [row[1] for row in db.execute("PRAGMA table_info(games)").fetchall()]
-    if "max_score" not in columns:
+    games_columns = [row[1] for row in db.execute("PRAGMA table_info(games)").fetchall()]
+    if "max_score" not in games_columns:
         db.execute("ALTER TABLE games ADD COLUMN max_score INTEGER NOT NULL DEFAULT 0")
         db.execute("UPDATE games SET max_score = rounds * 2 WHERE max_score = 0")
+
+    user_columns = [row[1] for row in db.execute("PRAGMA table_info(users)").fetchall()]
+    if "timezone" not in user_columns:
+        db.execute("ALTER TABLE users ADD COLUMN timezone TEXT NOT NULL DEFAULT 'Europe/Moscow'")
 
     if db.execute("SELECT COUNT(*) FROM users WHERE is_admin=1").fetchone()[0] == 0:
         db.execute(
