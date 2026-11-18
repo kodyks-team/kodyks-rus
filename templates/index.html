@@ -1,17 +1,17 @@
 {% extends "base.html" %}
-{% block title %}Слово·Маска{% endblock %}
+{% block title %}{{ app_name }}{% endblock %}
 {% block content %}
 <div class="card">
+  <div style="margin-bottom: 24px;">
+    <h1>{{ app_name }}</h1>
+    <p class="muted" style="font-size: 1.1rem;">Платформа для изучения русского языка через интерактивные задачи.</p>
+  </div>
+
   {% if g.user %}
-    <h1>Привет, {{ g.user.username }} 👋</h1>
-  {% else %}
-    <h1>Словарные слова</h1>
+    <h3>Привет, {{ g.user.username }} 👋</h3>
   {% endif %}
 
-  <p class="muted">
-    Тебе показывают слово. Иногда оно написано верно, иногда — с ошибкой.
-    Скажи, правильно ли оно, а если нет — введи верный вариант с первой попытки.
-  </p>
+  <p class="muted">{{ module_spelling_desc }}</p>
 
   {% if g.user %}
     <div class="row" style="margin-top: 20px;">
@@ -33,7 +33,7 @@
 </div>
 
 <div class="card">
-  <h3>Как играть</h3>
+  <h3>Как играть (Модуль: {{ module_spelling_name }})</h3>
   <p class="muted">
     Например, показано <b style="background:var(--input-bg);padding:2px 8px;border-radius:6px">апеляция</b> —
     нажимаешь «Ошибка», затем вводишь правильный вариант:

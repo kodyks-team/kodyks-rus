@@ -1,9 +1,9 @@
 {% extends "base.html" %}
-{% block title %}Новая игра{% endblock %}
+{% block title %}{{ module_spelling_name }} | {{ app_name }}{% endblock %}
 {% block content %}
 <div class="card" style="max-width: 500px; margin: 40px auto;">
-  <h1>Новая игра</h1>
-  <p class="muted">Выбери количество слов для этой игры.</p>
+  <h1>{{ module_spelling_name }}</h1>
+  <p class="muted">{{ module_spelling_desc }}</p>
 
   <form method="post" action="{{ url_for('game_new') }}">
     <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
