@@ -11,8 +11,12 @@ DUMMY_HASH = generate_password_hash("dummy-password-for-timing")
 
 
 def register_routes(app):
+    """Обработка форм."""
+    
     @app.route("/register", methods=["GET", "POST"])
     def register():
+        """Обработка формы создания пользователя."""
+
         if g_user():
             return redirect(url_for("index"))
         if request.method == "POST":
@@ -53,6 +57,8 @@ def register_routes(app):
 
     @app.route("/login", methods=["GET", "POST"])
     def login():
+        """Обработка формы входа пользователя / админа."""
+
         if g_user():
             return redirect(url_for("index"))
         if request.method == "POST":
@@ -74,12 +80,15 @@ def register_routes(app):
 
     @app.route("/logout", methods=["POST"])
     def logout():
+        """Обработка выхода из аккаунта."""
+
         check_csrf()
         session.clear()
         return redirect(url_for("index"))
 
 
-# Локальная обёртка, чтобы не импортировать `g` в каждом месте
 def g_user():
+    """Возвращает текущего авторизованного пользователя (или None)."""
+
     from flask import g
     return g.user
