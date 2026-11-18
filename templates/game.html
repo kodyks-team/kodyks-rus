@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+{% block title %}Игра{% endblock %}
+{% block content %}
+<div class="card">
+  <div class="row between muted" style="font-size:.9rem">
+    <span>Раунд <b style="color:var(--fg)">{{ index }} / {{ total }}</b></span>
+    <span>★ {{ score }}</span>
+  </div>
+
+  <div class="rounds" aria-hidden="true">
+    {% for i in range(total) %}
+      <i class="{% if i < index - 1 %}done{% elif i == index - 1 %}current{% endif %}"></i>
+    {% endfor %}
+  </div>
+
+  {% if phase == "guess" %}
+    <div class="hint">Правильно ли написано слово?</div>
+    <div class="mask">{{ rnd.shown|upper }}</div>
+
+    <form method="post" action="{{ url_for('game_guess') }}">
+      <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
+      <div class="choice-buttons">
+        <button class="btn" type="submit" name="choice" value="correct">✓ Верно</button>
+        <button class="btn danger" type="submit" name="choice" value="wrong">✗ Ошибка</button>
+      </div>
+    </form>
+  {% elif phase == "fix" %}
+    <div class="hint">Слово написано с ошибкой. Введите правильный вариант:</div>
+    <div class="mask">{{ rnd.shown|upper }}</div>
+
+    <form method="post" action="{{ url_for('game_fix') }}">
+      <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
+      <label for="answer">Правильное написание</label>
+      <input id="answer" type="text" name="answer" required autofocus
+             autocomplete="off" autocorrect="off" autocapitalize="off"
+             spellcheck="false" maxlength="64" enterkeyhint="go">
+      <div class="row" style="margin-top:16px">
+        <button type="submit">Проверить</button>
+      </div>
+    </form>
+  {% endif %}
+</div>
+{% endblock %}

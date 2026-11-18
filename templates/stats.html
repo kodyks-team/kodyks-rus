@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+{% block title %}Статистика{% endblock %}
+{% block content %}
+<div class="card">
+  <h1>Моя статистика</h1>
+  <div class="grid">
+    <div class="stat"><div class="k">Рекорд</div><div class="v">{{ g.user.best_score }}</div></div>
+    <div class="stat"><div class="k">Всего действий</div><div class="v">{{ total }}</div></div>
+    <div class="stat"><div class="k">Точность</div><div class="v">{{ '%.0f'|format(good_pct) }}%</div></div>
+  </div>
+
+  <div class="bar" style="margin-top:16px">
+    <div class="seg good" style="width: {{ good_pct }}%">{{ g.user.correct_total }}</div>
+    <div class="seg bad" style="width: {{ 100 - good_pct }}%">{{ g.user.wrong_total }}</div>
+  </div>
+  <div class="legend">
+    <span><span class="dot" style="background:var(--good)"></span>Верно: {{ g.user.correct_total }}</span>
+    <span><span class="dot" style="background:var(--bad)"></span>Ошибок: {{ g.user.wrong_total }}</span>
+  </div>
+</div>
+
+<div class="card">
+  <h3>Последние игры</h3>
+  {% if games %}
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Дата</th>
+            <th>Слов</th>
+            <th>Очки</th>
+            <th>Верных действий</th>
+            <th>Ошибок</th>
+          </tr>
+        </thead>
+        <tbody>
+        {% for g in games %}
+          <tr>
+            <td>{{ g.played_at }}</td>
+            <td>{{ g.rounds }}</td>
+            <td>
+              <b style="color:var(--accent); font-size:1.05rem;">{{ g.score }}</b>
+              <span class="muted">/ {{ g.max_score or (g.rounds * 2) }}</span>
+            </td>
+            <td style="color:var(--good); font-weight:600;">{{ g.correct }}</td>
+            <td style="color:var(--bad); font-weight:600;">{{ g.wrong }}</td>
+          </tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  {% else %}
+    <p class="muted">Ещё не сыграно ни одной игры.</p>
+  {% endif %}
+</div>
+{% endblock %}

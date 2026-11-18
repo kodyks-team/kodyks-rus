@@ -1,0 +1,62 @@
+{% extends "base.html" %}
+{% block title %}Админка{% endblock %}
+{% block content %}
+<div class="card">
+  <h1>Админ-панель</h1>
+  <p class="muted">Всего пользователей: {{ users|length }} · Сыграно игр: {{ games_count }}</p>
+
+  <div class="table-wrap" style="margin-top:12px">
+    <table>
+      <thead>
+        <tr>
+          <th>ID</th><th>Имя</th><th>Рекорд</th><th>✓</th><th>✗</th>
+          <th>Админ</th><th>Действия</th>
+        </tr>
+      </thead>
+      <tbody>
+      {% for u in users %}
+        <tr>
+          <td>{{ u.id }}</td>
+          <td>{{ u.username }}</td>
+          <td>{{ u.best_score }}</td>
+          <td>{{ u.correct_total }}</td>
+          <td>{{ u.wrong_total }}</td>
+          <td>{{ 'да' if u.is_admin else '—' }}</td>
+          <td>
+            <div class="row">
+              <form method="post" action="{{ url_for('admin_toggle_admin', uid=u.id) }}">
+                <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
+                <button class="btn ghost small" type="submit" {% if u.id == g.user.id %}disabled{% endif %}>
+                  {{ 'Снять админа' if u.is_admin else 'Сделать админом' }}
+                </button>
+              </form>
+
+              <form method="post" action="{{ url_for('admin_reset_stats', uid=u.id) }}">
+                <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
+                <button class="btn ghost small" type="submit">Сброс стат.</button>
+              </form>
+
+              <details>
+                <summary class="btn ghost small">Пароль</summary>
+                <form method="post" action="{{ url_for('admin_set_password', uid=u.id) }}" style="margin-top:8px;min-width:220px">
+                  <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
+                  <input type="password" name="new_password" placeholder="новый пароль" required minlength="6">
+                  <button class="btn small" type="submit" style="margin-top:8px">Сменить</button>
+                </form>
+              </details>
+
+              <form method="post" action="{{ url_for('admin_delete_user', uid=u.id) }}">
+                <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
+                <button class="btn danger small" type="submit" {% if u.id == g.user.id %}disabled{% endif %}>
+                  Удалить
+                </button>
+              </form>
+            </div>
+          </td>
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}
