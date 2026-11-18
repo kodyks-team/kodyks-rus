@@ -5,9 +5,13 @@ from utils import login_required
 
 
 def register_routes(app):
+    """Обработка запросов для статистики / лидерборда."""
+
     @app.route("/stats")
     @login_required
     def stats():
+        """Получение статистики пользователя для её отображения."""
+
         db = get_db()
         games = db.execute(
             "SELECT * FROM games WHERE user_id=? ORDER BY id DESC LIMIT 20",
@@ -19,6 +23,8 @@ def register_routes(app):
 
     @app.route("/leaderboard")
     def leaderboard():
+        """Получение части статистики первых 50 пользователей для отображения лидерборда."""
+
         db = get_db()
         rows = db.execute(
             """SELECT username, best_score, correct_total, wrong_total
