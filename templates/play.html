@@ -10,13 +10,9 @@
     
     <label for="num_rounds">Слов за игру</label>
     <select name="num_rounds" id="num_rounds" style="width: 100%; padding: 14px 16px; border-radius: 12px; background: var(--input-bg); color: var(--fg); border: 1px solid var(--border); font-size: 1.05rem; outline: none; margin-bottom: 20px;">
-      <option value="10" selected>10</option>
-      <option value="15">15</option>
-      <option value="20">20</option>
-      <option value="25">25</option>
-      <option value="30">30</option>
-      <option value="40">40</option>
-      <option value="50">50</option>
+      {% for n in rounds_options %}
+        <option value="{{ n }}" {% if n == 10 %}selected{% endif %}>{{ n }}</option>
+      {% endfor %}
     </select>
 
     <div class="row" style="flex-direction: column; gap: 12px;">

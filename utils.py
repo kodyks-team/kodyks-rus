@@ -3,7 +3,7 @@ from functools import wraps
 
 from flask import session, request, abort, g, redirect, url_for
 
-from config import THEME_COOKIE
+from config import THEME_COOKIE, ROUNDS_OPTIONS
 from db import get_db
 
 
@@ -25,7 +25,10 @@ def current_theme():
 
 
 def inject_theme():
-    return {"theme": current_theme()}
+    return {
+        "theme": current_theme(),
+        "rounds_options": ROUNDS_OPTIONS,
+    }
 
 
 def load_user():
