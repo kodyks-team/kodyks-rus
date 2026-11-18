@@ -14,3 +14,7 @@ venv/
 # ОС и редакторы
 .DS_Store
 .vscode/
+
+# Другие
+zzz.py
+main.py
