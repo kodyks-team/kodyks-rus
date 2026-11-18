@@ -7,6 +7,10 @@ from config import DB_PATH
 
 
 def get_db():
+    """Возвращает соединение с БД. Если его нет в контексте запроса (g),
+    создаёт новое. Настраивает возврат строк как словарей (sqlite3.Row) 
+    и включает поддержку внешних ключей."""
+
     if "db" not in g:
         g.db = sqlite3.connect(DB_PATH)
         g.db.row_factory = sqlite3.Row
@@ -15,12 +19,19 @@ def get_db():
 
 
 def close_db(exc=None):
+    """Закрывает соединение с БД, если оно было открыто в текущем запросе.
+    Вызывается автоматически Flask'ом при завершении запроса.
+    Параметр exc — это исключение, если запрос завершился с ошибкой (не используется)."""
+
     db = g.pop("db", None)
     if db is not None:
         db.close()
 
 
 def init_db():
+    """Инициализирует БД: создаёт таблицы, если их нет, применяет миграции
+    (добавляет колонку max_score, если её нет) и создаёт дефолтного админа."""
+
     db = sqlite3.connect(DB_PATH)
     db.executescript("""
     CREATE TABLE IF NOT EXISTS users (
