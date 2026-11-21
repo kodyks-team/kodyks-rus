@@ -12,7 +12,7 @@
 <link rel="shortcut icon" href="{{ url_for('static', filename='favicon.ico') }}">
 
 <title>{% block title %}{{ app_name }}{% endblock %}</title>
-<link rel="stylesheet" href="{{ url_for('static', filename='style.css', v='20261122-2') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='style.css', v='20261122-3') }}">
 {% block head_scripts %}{% endblock %}
 </head>
 <body>
@@ -71,7 +71,17 @@
   {% block content %}{% endblock %}
 </main>
 
-<footer>{{ app_footer }}</footer>
+<footer class="site-footer">
+  <div class="footer-note">{{ app_footer }}</div>
+  <nav class="footer-socials" aria-label="Социальные сети">
+    <a href="https://www.youtube.com/@KodMaker"
+       target="_blank" rel="noopener noreferrer">YouTube</a>
+    <a href="https://t.me/kodyks"
+       target="_blank" rel="noopener noreferrer">Написать мне</a>
+    <a href="https://t.me/kodyks_channels"
+       target="_blank" rel="noopener noreferrer">Мои Telegram-каналы</a>
+  </nav>
+</footer>
 
 <script src="{{ url_for('static', filename='theme.js') }}" defer></script>
 <script src="{{ url_for('static', filename='charts.js') }}" defer></script>
