@@ -1,0 +1,19 @@
+PYTHONANYWHERE — WSGI fragment
+
+Open Web -> Code -> WSGI configuration file.
+Insert this BEFORE the line importing the Flask app (usually `from app import app as application`).
+Keep the existing sys.path/project path configuration and the final app import.
+
+import os
+os.environ["APP_ENV"] = "production"
+os.environ["SECRET_KEY"] = "<paste output of secrets.token_hex(32)>"
+os.environ["TRUSTED_HOSTS"] = "<username>.pythonanywhere.com"
+os.environ["ADMIN_PASSWORD"] = "<new unique password, 12+ chars>"  # first successful startup only
+os.environ["ADMIN_USERNAME"] = "admin"                            # first startup only
+
+Generate SECRET_KEY in a PythonAnywhere Bash console:
+python -c "import secrets; print(secrets.token_hex(32))"
+
+If you also use custom domains, include exact hostnames in TRUSTED_HOSTS, comma-separated.
+After the first successful Reload and admin password update/creation, delete ADMIN_PASSWORD and ADMIN_USERNAME from WSGI and Reload again.
+Never commit or share the WSGI file or these secrets.
