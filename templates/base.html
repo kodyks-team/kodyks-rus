@@ -12,7 +12,7 @@
 <link rel="shortcut icon" href="{{ url_for('static', filename='favicon.ico') }}">
 
 <title>{% block title %}{{ app_name }}{% endblock %}</title>
-<link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='style.css', v='20261122-2') }}">
 {% block head_scripts %}{% endblock %}
 </head>
 <body>
@@ -24,7 +24,7 @@
       <a href="{{ url_for('play') }}">Игра</a>
       <a href="{{ url_for('stats') }}">Статистика</a>
       <a href="{{ url_for('leaderboard') }}">Рейтинг</a>
-      {% if g.user.is_admin %}<a href="{{ url_for('admin') }}">Админ</a>{% endif %}
+      {% if g.user.is_admin %}<a href="{{ url_for('admin') }}">Админ-панель</a>{% endif %}
       <span class="username" title="{{ g.user.username }}">{{ g.user.username }}</span>
       <form method="post" action="{{ url_for('logout') }}" style="display:inline; margin:0;">
         <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
