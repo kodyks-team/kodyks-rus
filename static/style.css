@@ -564,3 +564,42 @@ footer {
   .console-command-row button { grid-column: 1 / -1; width: 100%; }
   .admin-users-table { margin-top: 10px; }
 }
+
+/* ---------- Фон административной консоли ---------- */
+:root,
+html[data-theme="dark"] {
+  --console-bg: #2b303a;
+  --console-bar-bg: #383f4b;
+  --console-fg: #e3e8f0;
+  --console-bar-fg: #c2cad7;
+  --console-muted: #a5afbf;
+  --console-border: #4a5363;
+}
+
+html[data-theme="light"] {
+  --console-bg: #e7e9ed;
+  --console-bar-bg: #d8dce2;
+  --console-fg: #252b34;
+  --console-bar-fg: #424b58;
+  --console-muted: #68717f;
+  --console-border: #c1c7d0;
+}
+
+.console-window {
+  background: var(--console-bg);
+  border-color: var(--console-border);
+}
+
+.console-window-bar {
+  background: var(--console-bar-bg);
+  color: var(--console-bar-fg);
+  border-bottom-color: var(--console-border);
+}
+
+.console-output {
+  color: var(--console-fg);
+}
+
+.console-secure {
+  color: var(--console-muted);
+}
