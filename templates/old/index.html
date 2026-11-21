@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+{% block title %}{{ app_name }}{% endblock %}
+{% block content %}
+<div class="card">
+  <div style="margin-bottom: 24px;">
+    <h1>{{ app_name }}</h1>
+    <p class="muted" style="font-size: 1.1rem;">Платформа для изучения русского языка через интерактивные задачи.</p>
+  </div>
+
+  {% if g.user %}
+    <h3>Привет, {{ g.user.username }} 👋</h3>
+  {% endif %}
+
+  <p class="muted">{{ module_spelling_desc }}</p>
+
+  {% if g.user %}
+    <div class="row" style="margin-top: 20px;">
+      <a class="btn" href="{{ url_for('play') }}">Играть</a>
+      <a class="btn ghost" href="{{ url_for('stats') }}">Моя статистика</a>
+    </div>
+
+    <div class="grid" style="margin-top:24px">
+      <div class="stat"><div class="k">Рекорд</div><div class="v">{{ g.user.best_score }}</div></div>
+      <div class="stat"><div class="k">Верных действий</div><div class="v">{{ g.user.correct_total }}</div></div>
+      <div class="stat"><div class="k">Ошибок</div><div class="v">{{ g.user.wrong_total }}</div></div>
+    </div>
+  {% else %}
+    <div class="row">
+      <a class="btn" href="{{ url_for('register') }}">Создать аккаунт</a>
+      <a class="btn ghost" href="{{ url_for('login') }}">Войти</a>
+    </div>
+  {% endif %}
+</div>
+
+<div class="card">
+  <h3>Как играть (Модуль: {{ module_spelling_name }})</h3>
+  <p class="muted">
+    Например, показано <b style="background:var(--input-bg);padding:2px 8px;border-radius:6px">апеляция</b> —
+    нажимаешь «Ошибка», затем вводишь правильный вариант:
+    <b style="background:var(--input-bg);padding:2px 8px;border-radius:6px">апелляция</b>.
+    Очко за верное определение и ещё одно — за исправление.
+  </p>
+</div>
+{% endblock %}

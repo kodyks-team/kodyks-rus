@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% block title %}Рейтинг{% endblock %}
+{% block content %}
+<div class="card">
+  <h1>Таблица рейтинга</h1>
+  {% if rows %}
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr><th>#</th><th>Игрок</th><th>Рекорд</th><th>✓</th><th>✗</th></tr>
+        </thead>
+        <tbody>
+        {% for r in rows %}
+          <tr>
+            <td class="rank">{{ loop.index }}</td>
+            <td>{{ r.username }}</td>
+            <td><b>{{ r.best_score }}</b></td>
+            <td>{{ r.correct_total }}</td>
+            <td>{{ r.wrong_total }}</td>
+          </tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  {% else %}
+    <p class="muted">Рейтинг пока пуст.</p>
+  {% endif %}
+</div>
+{% endblock %}

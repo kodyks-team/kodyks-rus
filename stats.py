@@ -47,7 +47,7 @@ def register_routes(app):
         chart_bar_correct = []
         chart_bar_wrong = []
 
-        for game in games:  # <--- ИСПРАВЛЕНО ЗДЕСЬ
+        for game in games:
             # Переводим время игры в часовой пояс пользователя для подписи
             utc_dt = datetime.strptime(game["played_at"], "%Y-%m-%d %H:%M:%S").replace(tzinfo=timezone.utc)
             local_dt = utc_dt.astimezone(user_tz)
@@ -66,7 +66,7 @@ def register_routes(app):
             chart_bar_correct.append(game["correct"])
             chart_bar_wrong.append(game["wrong"])
 
-        # 6. Собираем умный рейтинг (Топ-20 или 7 выше + юзер + 7 ниже)
+        # Собираем умный рейтинг (Топ-20 или 7 выше + юзер + 7 ниже)
         all_users = db.execute("""
             SELECT id, username, best_score, correct_total, wrong_total 
             FROM users 

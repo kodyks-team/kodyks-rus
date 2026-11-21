@@ -30,7 +30,8 @@ def close_db(exc=None):
 
 def init_db():
     """Инициализирует БД: создаёт таблицы, если их нет, применяет миграции
-    (добавляет колонку max_score, если её нет) и создаёт дефолтного админа."""
+    (добавляет колонки max_score, errors в games и timezone в users)
+    и создаёт дефолтного админа."""
 
     db = sqlite3.connect(DB_PATH)
     db.executescript("""
@@ -53,6 +54,7 @@ def init_db():
         correct INTEGER NOT NULL,
         wrong INTEGER NOT NULL,
         max_score INTEGER NOT NULL DEFAULT 0,
+        errors TEXT NOT NULL DEFAULT '[]',
         played_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
     );
     CREATE TABLE IF NOT EXISTS active_games (
@@ -69,6 +71,8 @@ def init_db():
     if "max_score" not in games_columns:
         db.execute("ALTER TABLE games ADD COLUMN max_score INTEGER NOT NULL DEFAULT 0")
         db.execute("UPDATE games SET max_score = rounds * 2 WHERE max_score = 0")
+    if "errors" not in games_columns:
+        db.execute("ALTER TABLE games ADD COLUMN errors TEXT NOT NULL DEFAULT '[]'")
 
     user_columns = [row[1] for row in db.execute("PRAGMA table_info(users)").fetchall()]
     if "timezone" not in user_columns:

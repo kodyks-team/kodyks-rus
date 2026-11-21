@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% block title %}{{ module_spelling_name }} | {{ app_name }}{% endblock %}
+{% block content %}
+<div class="card" style="max-width: 500px; margin: 40px auto;">
+  <h1>{{ module_spelling_name }}</h1>
+  <p class="muted">{{ module_spelling_desc }}</p>
+
+  <form method="post" action="{{ url_for('game_new') }}">
+    <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
+    
+    <label for="num_rounds">Слов за игру</label>
+    <select name="num_rounds" id="num_rounds" style="width: 100%; padding: 14px 16px; border-radius: 12px; background: var(--input-bg); color: var(--fg); border: 1px solid var(--border); font-size: 1.05rem; outline: none; margin-bottom: 20px;">
+      {% for n in rounds_options %}
+        <option value="{{ n }}" {% if n == 10 %}selected{% endif %}>{{ n }}</option>
+      {% endfor %}
+    </select>
+
+    <div class="row" style="flex-direction: column; gap: 12px;">
+      <button class="btn" type="submit" style="width: 100%;">Начать</button>
+      
+      {% if has_active %}
+        <a class="btn ghost" href="{{ url_for('game') }}" style="width: 100%;">Продолжить текущую игру</a>
+      {% endif %}
+    </div>
+  </form>
+</div>
+{% endblock %}

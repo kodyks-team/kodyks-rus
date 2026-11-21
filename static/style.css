@@ -210,6 +210,8 @@ nav.links .username {
   margin-top: 18px;
   animation: fadeUp .4s ease both;
   transition: background-color .25s ease, border-color .25s ease;
+  /* Контейнер-запросы: cqi будет считаться от ширины карточки */
+  container-type: inline-size;
 }
 
 @keyframes fadeUp {
@@ -301,18 +303,28 @@ button:disabled, .btn:disabled { opacity: .4; cursor: not-allowed; box-shadow: n
 /* ---------- Маска слова ---------- */
 .mask {
   position: relative;
-  font-size: clamp(2.2rem, 8vw, 3.6rem);
+  font-size: clamp(0.65rem, calc(90vw / var(--len, 10)), 3.6rem);
   font-weight: 900; letter-spacing: .12em; text-align: center;
   padding: 32px 16px; margin: 20px 0; border-radius: var(--radius);
   background:
     radial-gradient(400px 200px at 50% 0%, var(--mask-glow), transparent 70%),
     linear-gradient(180deg, var(--mask-bg-top), var(--mask-bg-bot));
   border: 1px solid var(--border-hi);
-  word-break: break-word;
+  white-space: nowrap;
   font-family: var(--mono);
   text-shadow: var(--mask-text-shadow);
   animation: maskPulse 4s ease-in-out infinite;
   transition: background-color .25s ease, border-color .25s ease;
+}
+@supports (container-type: inline-size) {
+  .mask {
+    font-size: clamp(0.65rem, calc(95cqi / var(--len, 10)), 3.6rem);
+  }
+}
+.mask.long {
+  letter-spacing: 0.02em;
+  padding-left: 8px;
+  padding-right: 8px;
 }
 .mask::before {
   content: ""; position: absolute; inset: -1px; border-radius: inherit; padding: 1px;
@@ -490,11 +502,21 @@ footer {
   }
 }
 
-/* ---------- prefers-reduced-motion ---------- */
-@media (prefers-reduced-motion: reduce) {
-  *, *::before, *::after {
-    animation-duration: .01ms !important;
-    animation-iteration-count: 1 !important;
-    transition-duration: .01ms !important;
-  }
+/* ---------- Выпадающий блок ответа (лендинг) ---------- */
+.answer-dropdown {
+  display: none;
+  margin-top: 22px;
+  padding: 20px;
+  background: #f6f8fc;
+  border-radius: 16px;
+  animation: dropdownOpen .3s ease;
+}
+
+.answer-dropdown.active {
+  display: block;
+}
+
+@keyframes dropdownOpen {
+  from { opacity: 0; transform: translateY(-8px); }
+  to   { opacity: 1; transform: translateY(0); }
 }

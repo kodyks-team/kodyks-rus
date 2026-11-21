@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 {% block title %}Игра{% endblock %}
 {% block content %}
-<div class="card">
+<div class="card" style="max-width:760px;margin:0 auto">
   <div class="row between muted" style="font-size:.9rem">
     <span>Раунд <b style="color:var(--fg)">{{ index }} / {{ total }}</b></span>
     <span>★ {{ score }}</span>
@@ -15,7 +15,7 @@
 
   {% if phase == "guess" %}
     <div class="hint">Правильно ли написано слово?</div>
-    <div class="mask">{{ rnd.shown|upper }}</div>
+    <div class="mask{% if rnd.shown|length > 18 %} long{% endif %}" style="--len: {{ rnd.shown|length }};">{{ rnd.shown|upper }}</div>
 
     <form method="post" action="{{ url_for('game_guess') }}">
       <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
@@ -26,7 +26,7 @@
     </form>
   {% elif phase == "fix" %}
     <div class="hint">Слово написано с ошибкой. Введите правильный вариант:</div>
-    <div class="mask">{{ rnd.shown|upper }}</div>
+    <div class="mask{% if rnd.shown|length > 18 %} long{% endif %}" style="--len: {{ rnd.shown|length }};">{{ rnd.shown|upper }}</div>
 
     <form method="post" action="{{ url_for('game_fix') }}">
       <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
