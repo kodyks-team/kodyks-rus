@@ -6,77 +6,86 @@ from flask import session, request, abort, g, redirect, url_for
 from config import (
     THEME_COOKIE, ROUNDS_OPTIONS,
     APP_NAME, APP_BRAND_HTML, APP_FOOTER,
-    MODULE_SPELLING_NAME, MODULE_SPELLING_DESC
+    MODULE_SPELLING_NAME, MODULE_SPELLING_DESC,
 )
 from db import get_db
+from security import load_session_user, validate_request_origin
 
 
 def csrf_token():
-    """Проверяет наличие токена, если его нет, то создаёт и сохраняет его."""
-    if "_csrf" not in session:
-        session["_csrf"] = secrets.token_hex(16)
-    return session["_csrf"]
+    """Возвращает CSRF-токен текущей сессии, создавая его при необходимости."""
+    token = session.get("_csrf")
+    if not isinstance(token, str) or len(token) < 32:
+        token = secrets.token_hex(32)
+        session["_csrf"] = token
+    return token
 
 
 def check_csrf():
-    """Проверяет CSRF-токен из формы. Прерывает запрос с 400, если токен неверный."""
+    """Проверяет CSRF-токен и источник небезопасного HTTP-запроса."""
+    validate_request_origin()
     token = request.form.get("_csrf", "")
-    if not token or not secrets.compare_digest(token, session.get("_csrf", "")):
+    expected = session.get("_csrf", "")
+    if (
+        not isinstance(token, str)
+        or not isinstance(expected, str)
+        or not token
+        or not secrets.compare_digest(token, expected)
+    ):
         abort(400, "CSRF token missing or invalid")
 
 
 def current_theme():
-    """Возвращает текущую тему из cookie ('dark' или 'light'). 
-    Если cookie нет или значение некорректно, возвращает 'dark'."""
-    t = request.cookies.get(THEME_COOKIE, "dark")
-    return t if t in ("dark", "light") else "dark"
+    """Возвращает безопасное значение темы из пользовательской cookie."""
+    value = request.cookies.get(THEME_COOKIE, "dark")
+    return value if value in ("dark", "light") else "dark"
 
 
 def inject_theme():
-    """Добавляет переменные в контекст всех шаблонов."""
+    """Добавляет общие настройки приложения в контекст шаблонов."""
     return {
         "theme": current_theme(),
         "rounds_options": ROUNDS_OPTIONS,
-        # Брендинг
         "app_name": APP_NAME,
         "app_brand_html": APP_BRAND_HTML,
         "app_footer": APP_FOOTER,
-        # Модули
         "module_spelling_name": MODULE_SPELLING_NAME,
         "module_spelling_desc": MODULE_SPELLING_DESC,
     }
 
 
 def load_user():
-    """Загружает данные текущего пользователя из БД в g.user.
-    Вызывается перед каждым запросом (через before_request)."""
-    g.user = None
-    uid = session.get("user_id")
-    if uid:
-        row = get_db().execute("SELECT * FROM users WHERE id=?", (uid,)).fetchone()
-        if row is None:
-            session.clear()
-        else:
-            g.user = row
+    """Проверяет серверную сессию перед каждым запросом."""
+    g.user = load_session_user()
 
 
 def login_required(f):
-    """Декоратор: проверяет авторизацию пользователя.
-    Если вход не выполнен — перенаправляет на страницу логина."""
+    """Перенаправляет неавторизованного пользователя на страницу входа."""
     @wraps(f)
-    def wrapper(*a, **kw):
+    def wrapper(*args, **kwargs):
         if not g.user:
             return redirect(url_for("login", next=request.path))
-        return f(*a, **kw)
+        return f(*args, **kwargs)
     return wrapper
 
 
+def assert_current_session(db):
+    """Повторно проверяет сессию внутри транзакции перед изменением данных."""
+    fresh_user = load_session_user()
+    if fresh_user is None or not g.user or fresh_user["id"] != g.user["id"]:
+        db.rollback()
+        abort(403)
+    g.user = fresh_user
+
+
 def admin_required(f):
-    """Декоратор: проверяет, что вошёл администратор.
-    Если нет прав — возвращает ошибку 403."""
+    """Разрешает выполнение маршрута только по актуальной сессии администратора."""
     @wraps(f)
-    def wrapper(*a, **kw):
-        if not g.user or not g.user["is_admin"]:
+    def wrapper(*args, **kwargs):
+        fresh_user = load_session_user()
+        if fresh_user is None or not fresh_user["is_admin"]:
+            g.user = None
             abort(403)
-        return f(*a, **kw)
+        g.user = fresh_user
+        return f(*args, **kwargs)
     return wrapper

@@ -1,12 +1,10 @@
 import json
 
-from flask import (
-    render_template, request, redirect, url_for, flash, g, abort,
-)
+from flask import abort, render_template, request, redirect, url_for, flash, g
 
 from config import ROUNDS_OPTIONS
 from db import get_db
-from utils import check_csrf, login_required
+from utils import assert_current_session, check_csrf, login_required
 from words import new_game_state, norm
 
 
@@ -14,6 +12,7 @@ def register_routes(app):
     @app.route("/play")
     @login_required
     def play():
+        """Показывает выбор количества раундов и наличие активной игры."""
         db = get_db()
         row = db.execute(
             "SELECT state FROM active_games WHERE user_id=?", (g.user["id"],)
@@ -21,16 +20,19 @@ def register_routes(app):
         has_active = False
         if row:
             try:
-                st = json.loads(row["state"])
-                if not st.get("finished") and st.get("current", 0) < len(st.get("rounds", [])):
-                    has_active = True
-            except Exception:
-                pass
+                state = json.loads(row["state"])
+                has_active = (
+                    not state.get("finished")
+                    and state.get("current", 0) < len(state.get("rounds", []))
+                )
+            except (TypeError, ValueError, AttributeError):
+                has_active = False
         return render_template("play.html", has_active=has_active)
 
     @app.route("/game")
     @login_required
     def game():
+        """Показывает текущее состояние игры без изменения данных на GET."""
         db = get_db()
         row = db.execute(
             "SELECT state FROM active_games WHERE user_id=?", (g.user["id"],)
@@ -38,77 +40,78 @@ def register_routes(app):
         if row is None:
             return redirect(url_for("play"))
 
-        state = json.loads(row["state"])
+        try:
+            state = json.loads(row["state"])
+            rounds = state["rounds"]
+            current = state["current"]
+            if not isinstance(rounds, list) or isinstance(current, bool) or not isinstance(current, int):
+                raise ValueError("Некорректное состояние игры")
+        except (TypeError, ValueError, KeyError):
+            abort(400)
+
         if state.get("finished"):
             return redirect(url_for("game_result"))
 
-        original_current = state["current"]
-        phase = None
-
-        # Продвигаемся вперёд, пропуская уже завершённые раунды.
-        # Без этого после завершения раунда приходилось бы делать лишний редирект.
-        while state["current"] < len(state["rounds"]):
-            rnd = state["rounds"][state["current"]]
-            if rnd["guessed"] is None:
-                phase = "guess"
-                break
-            if rnd["shown_is_correct"] is False and not rnd["fix_attempted"]:
-                phase = "fix"
-                break
-            state["current"] += 1
+        total = len(rounds)
+        if current < 0:
+            abort(400)
+        if current >= total:
+            # Поддержка состояния, сохранённого старой версией приложения:
+            # завершение произойдёт только отдельным CSRF-защищённым POST.
+            phase = "complete"
+            rnd = None
+            index = total
         else:
-            # Все раунды пройдены — завершаем игру.
-            _finish_game(db, state, g.user["id"])
-            db.execute(
-                "UPDATE active_games SET state=?, updated_at=CURRENT_TIMESTAMP WHERE user_id=?",
-                (json.dumps(state, ensure_ascii=False), g.user["id"]),
-            )
-            db.commit()
-            return redirect(url_for("game_result"))
+            rnd = rounds[current]
+            index = current + 1
+            if rnd.get("guessed") is None:
+                phase = "guess"
+            elif rnd.get("shown_is_correct") is False and not rnd.get("fix_attempted"):
+                phase = "fix"
+            else:
+                phase = "advance"
 
-        # Если продвинулись вперёд — фиксируем в БД, чтобы POST-обработчики
-        # не пытались обновить уже завершённый раунд.
-        if state["current"] != original_current:
-            db.execute(
-                "UPDATE active_games SET state=?, updated_at=CURRENT_TIMESTAMP WHERE user_id=?",
-                (json.dumps(state, ensure_ascii=False), g.user["id"]),
-            )
-            db.commit()
-
-        rnd = state["rounds"][state["current"]]
         return render_template(
             "game.html",
             rnd=rnd,
             phase=phase,
-            index=state["current"] + 1,
-            total=len(state["rounds"]),
-            score=state["score"],
+            index=index,
+            total=total,
+            score=state.get("score", 0),
         )
 
     @app.route("/game/guess", methods=["POST"])
     @login_required
     def game_guess():
+        """Сохраняет ответ игрока, не продвигая раунд через GET."""
         check_csrf()
         db = get_db()
+        db.execute("BEGIN IMMEDIATE")
+        assert_current_session(db)
         row = db.execute(
             "SELECT state FROM active_games WHERE user_id=?", (g.user["id"],)
         ).fetchone()
         if row is None:
+            db.rollback()
             return redirect(url_for("play"))
-        state = json.loads(row["state"])
-        if state.get("finished") or state["current"] >= len(state["rounds"]):
-            return redirect(url_for("game"))
-        rnd = state["rounds"][state["current"]]
-        if rnd["guessed"] is not None:
+        try:
+            state = json.loads(row["state"])
+            current = state["current"]
+            rnd = state["rounds"][current]
+        except (TypeError, ValueError, KeyError, IndexError):
+            db.rollback()
+            abort(400)
+        if state.get("finished") or rnd.get("guessed") is not None:
+            db.rollback()
             return redirect(url_for("game"))
 
         choice = request.form.get("choice", "")
         if choice not in ("correct", "wrong"):
+            db.rollback()
             abort(400)
 
-        player_thinks_correct = (choice == "correct")
-        actually_correct = rnd["shown_is_correct"]
-
+        player_thinks_correct = choice == "correct"
+        actually_correct = bool(rnd["shown_is_correct"])
         if player_thinks_correct == actually_correct:
             rnd["guessed"] = True
             rnd["actions_correct"] += 1
@@ -129,29 +132,45 @@ def register_routes(app):
     @app.route("/game/fix", methods=["POST"])
     @login_required
     def game_fix():
+        """Проверяет исправление слова и защищает от повторной отправки."""
         check_csrf()
         db = get_db()
+        db.execute("BEGIN IMMEDIATE")
+        assert_current_session(db)
         row = db.execute(
             "SELECT state FROM active_games WHERE user_id=?", (g.user["id"],)
         ).fetchone()
         if row is None:
+            db.rollback()
             return redirect(url_for("play"))
-        state = json.loads(row["state"])
-        if state.get("finished") or state["current"] >= len(state["rounds"]):
-            return redirect(url_for("game"))
-        rnd = state["rounds"][state["current"]]
+        try:
+            state = json.loads(row["state"])
+            current = state["current"]
+            rnd = state["rounds"][current]
+        except (TypeError, ValueError, KeyError, IndexError):
+            db.rollback()
+            abort(400)
 
-        if rnd["shown_is_correct"] or rnd["guessed"] is None or rnd["fix_attempted"]:
+        if (
+            state.get("finished")
+            or rnd.get("shown_is_correct")
+            or rnd.get("guessed") is None
+            or rnd.get("fix_attempted")
+        ):
+            db.rollback()
             return redirect(url_for("game"))
 
-        answer = norm(request.form.get("answer", ""))
+        raw_answer = request.form.get("answer", "")
+        if len(raw_answer) > 64:
+            db.rollback()
+            abort(400)
+        answer = norm(raw_answer)
         if not answer:
+            db.rollback()
             flash("Введите слово", "error")
             return redirect(url_for("game"))
 
-        correct_norm = norm(rnd["correct"])
-        ok = (answer == correct_norm)
-
+        ok = answer == norm(rnd["correct"])
         rnd["fix_attempted"] = True
         rnd["fix_ok"] = ok
         if ok:
@@ -169,12 +188,69 @@ def register_routes(app):
         db.commit()
         return redirect(url_for("game"))
 
+    @app.route("/game/advance", methods=["POST"])
+    @login_required
+    def game_advance():
+        """Продвигает завершённый раунд только по CSRF-защищённому POST."""
+        check_csrf()
+        db = get_db()
+        db.execute("BEGIN IMMEDIATE")
+        assert_current_session(db)
+        row = db.execute(
+            "SELECT state FROM active_games WHERE user_id=?", (g.user["id"],)
+        ).fetchone()
+        if row is None:
+            db.rollback()
+            return redirect(url_for("play"))
+
+        try:
+            state = json.loads(row["state"])
+            rounds = state["rounds"]
+            current = state["current"]
+            if not isinstance(rounds, list) or isinstance(current, bool) or not isinstance(current, int):
+                raise ValueError("Некорректное состояние игры")
+        except (TypeError, ValueError, KeyError):
+            db.rollback()
+            abort(400)
+
+        if state.get("finished"):
+            db.rollback()
+            return redirect(url_for("game_result"))
+        if current < 0:
+            db.rollback()
+            abort(400)
+        if current < len(rounds):
+            rnd = rounds[current]
+            completed = (
+                rnd.get("guessed") is not None
+                and (bool(rnd.get("shown_is_correct")) or bool(rnd.get("fix_attempted")))
+            )
+            if not completed:
+                db.rollback()
+                abort(400)
+            state["current"] += 1
+
+        finished_now = state["current"] >= len(rounds)
+        if finished_now:
+            _finish_game(db, state, g.user["id"])
+
+        db.execute(
+            "UPDATE active_games SET state=?, updated_at=CURRENT_TIMESTAMP WHERE user_id=?",
+            (json.dumps(state, ensure_ascii=False), g.user["id"]),
+        )
+        db.commit()
+        if finished_now:
+            return redirect(url_for("game_result"))
+        return redirect(url_for("game"))
+
     @app.route("/game/new", methods=["POST"])
     @login_required
     def game_new():
+        """Создаёт новую игру и сохраняет её в активном состоянии."""
         check_csrf()
         db = get_db()
-
+        db.execute("BEGIN IMMEDIATE")
+        assert_current_session(db)
         num_rounds = request.form.get("num_rounds", 10, type=int)
         if num_rounds not in ROUNDS_OPTIONS:
             num_rounds = 10
@@ -182,16 +258,19 @@ def register_routes(app):
         row = db.execute(
             "SELECT state FROM active_games WHERE user_id=?", (g.user["id"],)
         ).fetchone()
-        prev_state = json.loads(row["state"]) if row else None
+        prev_state = None
+        if row:
+            try:
+                prev_state = json.loads(row["state"])
+            except (TypeError, ValueError):
+                prev_state = None
 
         state = new_game_state(prev_state, num_rounds)
-
-        # INSERT ... ON CONFLICT: создаёт строку, если её нет, и обновляет, если есть.
         db.execute(
             "INSERT INTO active_games (user_id, state, updated_at) "
             "VALUES (?, ?, CURRENT_TIMESTAMP) "
             "ON CONFLICT(user_id) DO UPDATE SET "
-            "state = excluded.state, updated_at = CURRENT_TIMESTAMP",
+            "state=excluded.state, updated_at=CURRENT_TIMESTAMP",
             (g.user["id"], json.dumps(state, ensure_ascii=False)),
         )
         db.commit()
@@ -200,74 +279,73 @@ def register_routes(app):
     @app.route("/game/result")
     @login_required
     def game_result():
-        """Показывает результат последней завершённой игры.
-
-        Данные берутся из таблицы games (а не из active_games), поэтому
-        результат не ломается, если игрок уже запустил новую партию.
-        """
+        """Показывает результат последней завершённой игры пользователя."""
         db = get_db()
-        game = db.execute(
+        game_row = db.execute(
             "SELECT * FROM games WHERE user_id=? ORDER BY id DESC LIMIT 1",
             (g.user["id"],),
         ).fetchone()
 
+        row = db.execute(
+            "SELECT state FROM active_games WHERE user_id=?", (g.user["id"],)
+        ).fetchone()
         errors = []
         max_score = 0
-        if game is not None:
-            keys = game.keys()
-            if "errors" in keys and game["errors"]:
-                try:
-                    errors = json.loads(game["errors"])
-                except (ValueError, TypeError):
-                    errors = []
-            if "max_score" in keys and game["max_score"]:
-                max_score = game["max_score"]
-            elif "rounds" in keys:
-                max_score = game["rounds"]
+        if row:
+            try:
+                state = json.loads(row["state"])
+                errors = state.get("errors", [])
+                max_score = state.get("max_score")
+                if max_score is None:
+                    max_score = len(state.get("rounds", [])) * 2
+            except (TypeError, ValueError, AttributeError):
+                errors = []
 
         return render_template(
-            "result.html", game=game, errors=errors, max_score=max_score
+            "result.html", game=game_row, errors=errors, max_score=max_score
         )
 
 
 def _finish_game(db, state, user_id):
-    """Считает итоги игры и пишет их в БД (games и users).
-
-    Мутирует state: выставляет finished, max_score и errors.
-    Ошибки сохраняются прямо в games.errors как JSON, чтобы страница
-    результата не зависела от active_games (которую перезаписывает новая игра).
-    """
-    total_correct = sum(r["actions_correct"] for r in state["rounds"])
-    total_wrong = sum(r["actions_wrong"] for r in state["rounds"])
-    max_possible = sum(1 if r["shown_is_correct"] else 2 for r in state["rounds"])
+    """Считает итоги игры и пишет их в БД."""
+    total_correct = sum(round_data["actions_correct"] for round_data in state["rounds"])
+    total_wrong = sum(round_data["actions_wrong"] for round_data in state["rounds"])
+    max_possible = sum(
+        1 if round_data["shown_is_correct"] else 2 for round_data in state["rounds"]
+    )
 
     state["finished"] = True
     state["max_score"] = max_possible
 
-    errors = []
-    for r in state["rounds"]:
-        if r["actions_wrong"] > 0:
-            errors.append({
-                "shown": r["shown"],
-                "correct": r["correct"],
-                "shown_is_correct": r["shown_is_correct"],
-                "guess_wrong": r["guessed"] is False,
-                "fix_wrong": r["fix_ok"] is False,
-            })
-    state["errors"] = errors
-
     db.execute(
-        "INSERT INTO games (user_id, score, rounds, correct, wrong, max_score, errors) "
-        "VALUES (?,?,?,?,?,?,?)",
-        (user_id, state["score"], len(state["rounds"]),
-         total_correct, total_wrong, max_possible,
-         json.dumps(errors, ensure_ascii=False)),
+        "INSERT INTO games (user_id, score, rounds, correct, wrong, max_score) "
+        "VALUES (?, ?, ?, ?, ?, ?)",
+        (
+            user_id,
+            state["score"],
+            len(state["rounds"]),
+            total_correct,
+            total_wrong,
+            max_possible,
+        ),
     )
     db.execute(
         """UPDATE users SET
-             best_score = MAX(best_score, ?),
-             correct_total = correct_total + ?,
-             wrong_total = wrong_total + ?
-           WHERE id = ?""",
+             best_score=MAX(best_score, ?),
+             correct_total=correct_total + ?,
+             wrong_total=wrong_total + ?
+           WHERE id=?""",
         (state["score"], total_correct, total_wrong, user_id),
     )
+
+    errors = []
+    for round_data in state["rounds"]:
+        if round_data["actions_wrong"] > 0:
+            errors.append({
+                "shown": round_data["shown"],
+                "correct": round_data["correct"],
+                "shown_is_correct": round_data["shown_is_correct"],
+                "guess_wrong": round_data["guessed"] is False,
+                "fix_wrong": round_data["fix_ok"] is False,
+            })
+    state["errors"] = errors

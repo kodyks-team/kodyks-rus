@@ -39,16 +39,6 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     });
 
-    // Функция для настройки зума (общая для линии и столбцов)
-    const zoomOptions = {
-        pan: { enabled: true, mode: 'x', modifierKey: 'shift' },
-        zoom: {
-            wheel: { enabled: true },
-            pinch: { enabled: true },
-            mode: 'x',
-        }
-    };
-
     // 2. Линейная диаграмма (Динамика КПД)
     new Chart(document.getElementById('chart-line'), {
         type: 'line',
@@ -73,8 +63,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 x: { grid: { display: false } }
             },
             plugins: {
-                legend: { display: false },
-                zoom: zoomOptions
+                legend: { display: false }
             }
         }
     });
@@ -107,8 +96,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 y: { beginAtZero: true, grid: { color: colorGrid } }
             },
             plugins: {
-                legend: { position: 'bottom' },
-                zoom: zoomOptions
+                legend: { position: 'bottom' }
             }
         }
     });

@@ -1,12 +1,79 @@
 {% extends "base.html" %}
-{% block title %}Админка{% endblock %}
+{% block title %}Админ-панель{% endblock %}
 {% block content %}
-<div class="card">
-  <p class="muted" style="font-size:.78rem;font-weight:800;letter-spacing:.12em;text-transform:uppercase;margin-bottom:8px">УПРАВЛЕНИЕ ПЛАТФОРМОЙ</p>
-  <h1>Админ-панель</h1>
-  <p class="muted">Всего пользователей: {{ users|length }} · Сыграно игр: {{ games_count }}</p>
+<section class="card admin-console-card">
+  <div class="row between admin-section-heading">
+    <div>
+      <h1>Административная консоль</h1>
+      <p class="muted">Командное управление сайтом. Выполняются только поддерживаемые команды — shell и произвольный SQL недоступны.</p>
+    </div>
+    <span class="admin-console-badge">ADMIN ACCESS</span>
+  </div>
 
-  <div class="table-wrap" style="margin-top:12px">
+  <div class="console-window">
+    <div class="console-window-bar">
+      <div class="console-lights" aria-hidden="true"><i></i><i></i><i></i></div>
+      <span>kod-yazyka · admin console</span>
+      <span class="console-secure">защищённое соединение</span>
+    </div>
+    <pre class="console-output" aria-live="polite">{% if console_result %}admin@kod-yazyka:~$ {{ console_result.command }}
+{% if console_result.is_error %}[ОШИБКА]{% else %}[ВЫПОЛНЕНО]{% endif %}
+{{ console_result.output }}{% else %}КОНСОЛЬ ГОТОВА
+Введите help, чтобы посмотреть список команд.
+
+admin@kod-yazyka:~$ _{% endif %}</pre>
+  </div>
+
+  <form method="post" action="{{ url_for('admin_console') }}" class="console-form">
+    <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
+    <label for="console-command">Команда</label>
+    <div class="console-command-row">
+      <span class="console-prompt" aria-hidden="true">$</span>
+      <input id="console-command" type="text" name="command" maxlength="200"
+             autocomplete="off" autocapitalize="off" spellcheck="false"
+             placeholder="help" aria-describedby="console-hint" required>
+      <button type="submit">Выполнить</button>
+    </div>
+    <p class="muted console-hint" id="console-hint">
+      Примеры: <code>status</code>, <code>users 20</code>, <code>user 5</code>,
+      <code>games</code>. Для опасных действий добавляйте <code>confirm</code>.
+    </p>
+  </form>
+
+  {% if console_history %}
+    <details class="console-history">
+      <summary>История команд (последние 8)</summary>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr><th>Время</th><th>Администратор</th><th>Команда</th><th>Результат</th></tr>
+          </thead>
+          <tbody>
+          {% for item in console_history %}
+            <tr>
+              <td>{{ item.created_at }}</td>
+              <td>{{ item.admin_name }}</td>
+              <td><a href="{{ url_for('admin', console_log=item.id) }}"><code>{{ item.command }}</code></a></td>
+              <td>
+                {% if item.is_error %}<span class="console-status error">ошибка</span>
+                {% else %}<span class="console-status success">выполнено</span>{% endif %}
+              </td>
+            </tr>
+          {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </details>
+  {% endif %}
+</section>
+
+<section class="card">
+  <div class="row between">
+    <h2>Пользователи</h2>
+    <p class="muted admin-summary">Всего: {{ users|length }} · Сыграно игр: {{ games_count }}</p>
+  </div>
+
+  <div class="table-wrap admin-users-table">
     <table>
       <thead>
         <tr>
@@ -24,7 +91,7 @@
           <td>{{ u.wrong_total }}</td>
           <td>{{ 'да' if u.is_admin else '—' }}</td>
           <td>
-            <div class="row">
+            <div class="row admin-user-actions">
               <form method="post" action="{{ url_for('admin_toggle_admin', uid=u.id) }}">
                 <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
                 <button class="btn ghost small" type="submit" {% if u.id == g.user.id %}disabled{% endif %}>
@@ -39,10 +106,10 @@
 
               <details>
                 <summary class="btn ghost small">Пароль</summary>
-                <form method="post" action="{{ url_for('admin_set_password', uid=u.id) }}" style="margin-top:8px;min-width:220px">
+                <form method="post" action="{{ url_for('admin_set_password', uid=u.id) }}" class="admin-password-form">
                   <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
-                  <input type="password" name="new_password" placeholder="новый пароль" required minlength="6">
-                  <button class="btn small" type="submit" style="margin-top:8px">Сменить</button>
+                  <input type="password" name="new_password" placeholder="новый пароль" required minlength="12" maxlength="1024" autocomplete="new-password">
+                  <button class="btn small" type="submit">Сменить</button>
                 </form>
               </details>
 
@@ -59,5 +126,5 @@
       </tbody>
     </table>
   </div>
-</div>
+</section>
 {% endblock %}
