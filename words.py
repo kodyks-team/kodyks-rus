@@ -24,6 +24,7 @@ def load_pairs():
                 f"должны иметь одинаковую длину"
             )
 
+        correct_words = {norm(word) for word in true_words if word}
         pairs = []
         for idx, (t, f_variants) in enumerate(zip(true_words, false_data)):
             t = (t or "").strip()
@@ -39,18 +40,25 @@ def load_pairs():
                 )
             clean = []
             seen = set()
+            target_norm = norm(t)
             for v in variants:
-                v = (v or "").replace(" ", "").replace("\u00a0", "").strip()
-                if not v:
+                v = "".join((v or "").split())
+                variant_norm = norm(v)
+                if not variant_norm:
                     continue
-                if v.lower() == t.lower():
+                if variant_norm == target_norm:
                     continue
-                if v.lower() in seen:
+                if variant_norm in correct_words:
                     continue
-                seen.add(v.lower())
+                if variant_norm in seen:
+                    continue
+                seen.add(variant_norm)
                 clean.append(v)
             if not clean:
-                clean = [t + "ъ"]
+                raise RuntimeError(
+                    f"false.json[{idx}] для слова «{t}» не содержит "
+                    "допустимых ошибочных вариантов"
+                )
             pairs.append({"word": t, "false_variants": clean})
 
         _pairs_cache = pairs
@@ -59,7 +67,7 @@ def load_pairs():
 
 def norm(s):
     """Нормализация для сравнения: ё→е, нижний регистр, только буквы."""
-    s = (s or "").replace("ё", "е").lower()
+    s = (s or "").lower().replace("ё", "е")
     return "".join(ch for ch in s if ch.isalpha())
 
 
