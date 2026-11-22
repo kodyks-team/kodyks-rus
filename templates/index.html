@@ -1,6 +1,8 @@
+
 {% extends "base.html" %}
 {% block title %}Код Языка — Тренажёр грамотности{% endblock %}
 {% block content %}
+
 <div class="landing-page">
  <section class="hero">
   <div class="landing-container hero-grid">
@@ -8,24 +10,48 @@
     <div class="eyebrow"><span class="dot"></span>Тренируй грамотность каждый день</div>
     <h1>Прокачай свою грамотность<br>Одно слово за раз</h1>
     <p class="hero-copy">Интерактивные задания, которые учат замечать ошибки и писать правильно — легко, понятно и с удовольствием</p>
-    <div class="actions"><a class="primary" href="{{ url_for('play') }}">Начать тренировку</a><a class="secondary" href="#how">Как это работает →</a></div>
-    <div class="micro"><span class="bubbles"><i></i><i></i><i></i></span>Учись в своём темпе — результат с каждой попыткой</div>
+    <div class="actions">
+     <a class="primary" href="{{ url_for('play') }}">Начать тренировку</a>
+     <a class="secondary" href="#how">Как это работает →</a>
+    </div>
+    <div class="micro">
+     <span class="bubbles"><i></i><i></i><i></i></span>
+     Учись в своём темпе — результат с каждой попыткой
+    </div>
    </div>
+
    <div class="quiz-wrap" id="quiz">
     <div class="quiz">
-     <div class="quiz-head"><div><div class="quiz-kicker">СЛОВАРНЫЕ СЛОВА</div><div class="quiz-title">Проверь себя</div></div><span class="counter">04 / 10</span></div>
-     <div class="word-panel"><small>Как написано слово?</small><strong id="word">апеляция</strong><p>Найди ошибку, если она есть</p></div>
+     <div class="quiz-head">
+      <div>
+       <div class="quiz-kicker">СЛОВАРНЫЕ СЛОВА</div>
+       <div class="quiz-title">Проверь себя</div>
+      </div>
+      <span class="counter">04 / 10</span>
+     </div>
+
+     <div class="word-panel">
+      <small>Как написано слово?</small>
+      <strong id="word">апеляция</strong>
+      <p>Найди ошибку, если она есть</p>
+     </div>
+
      <div class="choices" role="group" aria-label="Выбери правильность написания">
       <button type="button" class="choice" data-choice="correct" aria-pressed="false">✓ Верно</button>
       <button type="button" class="choice" data-choice="wrong" aria-pressed="false">✕ Ошибка</button>
      </div>
+
      <div class="answer-dropdown" id="answerDropdown" aria-hidden="true">
       <label class="field-label" for="answer">ТВОЙ ВАРИАНТ</label>
       <input class="answer" id="answer" type="text" placeholder="Введи правильное слово" autocomplete="off" disabled>
       <button type="button" class="primary check" id="check">Проверить ответ →</button>
      </div>
+
      <div class="feedback" id="feedback" aria-live="polite"></div>
-     <div class="quiz-foot"><span class="coin"></span>За верный ответ получай баллы и повышай рейтинг</div>
+     <div class="quiz-foot">
+      <span class="coin"></span>
+      За верный ответ получай баллы и повышай рейтинг
+     </div>
     </div>
    </div>
   </div>
@@ -36,96 +62,638 @@
    <div class="section-kicker">Просто начать — легко продолжать</div>
    <h2>Грамотность складывается из практики</h2>
    <p class="section-intro">Небольшие игровые шаги превращают сложные правила в уверенный навык.</p>
+
    <div class="features">
-    <article class="feature"><div class="feature-icon"></div><h3>Учись на примерах</h3><p>Короткие задания помогают закрепить навык без перегрузки.</p></article>
-    <article class="feature"><div class="feature-icon"></div><h3>Исправляй ошибки</h3><p>Короткие задания помогают закрепить навык без перегрузки.</p></article>
-    <article class="feature" id="rating"><div class="feature-icon"></div><h3>Следи за прогрессом</h3><p>Короткие задания помогают закрепить навык без перегрузки.</p></article>
+    <article class="feature">
+     <div class="feature-icon"></div>
+     <h3>Учись на примерах</h3>
+     <p>Короткие задания помогают закрепить навык без перегрузки.</p>
+    </article>
+
+    <article class="feature">
+     <div class="feature-icon"></div>
+     <h3>Исправляй ошибки</h3>
+     <p>Короткие задания помогают закрепить навык без перегрузки.</p>
+    </article>
+
+    <article class="feature" id="rating">
+     <div class="feature-icon"></div>
+     <h3>Следи за прогрессом</h3>
+     <p>Короткие задания помогают закрепить навык без перегрузки.</p>
+    </article>
    </div>
   </div>
  </section>
 
  <section class="route" id="how">
   <div class="landing-container route-grid">
-   <div class="route-copy"><div class="section-kicker route-kicker">Твой маршрут</div><h2>Три шага к уверенной орфографии</h2><p>Смотри на слово, принимай решение и закрепляй правильное написание.</p></div>
+   <div class="route-copy">
+    <div class="section-kicker route-kicker">Твой маршрут</div>
+    <h2>Три шага к уверенной орфографии</h2>
+    <p>Смотри на слово, принимай решение и закрепляй правильное написание.</p>
+   </div>
+
    <div class="steps">
-    <article class="step"><div class="step-num">01</div><h3>Заметь слово</h3><p>Внимательно прочитай написание.</p></article>
-    <article class="step"><div class="step-num">02</div><h3>Найди ошибку</h3><p>Реши, правильно ли написано слово.</p></article>
-    <article class="step"><div class="step-num">03</div><h3>Закрепи навык</h3><p>Введи верный вариант и получи баллы.</p></article>
+    <article class="step">
+     <div class="step-num">01</div>
+     <h3>Заметь слово</h3>
+     <p>Внимательно прочитай написание.</p>
+    </article>
+
+    <article class="step">
+     <div class="step-num">02</div>
+     <h3>Найди ошибку</h3>
+     <p>Реши, правильно ли написано слово.</p>
+    </article>
+
+    <article class="step">
+     <div class="step-num">03</div>
+     <h3>Закрепи навык</h3>
+     <p>Введи верный вариант и получи баллы.</p>
+    </article>
    </div>
   </div>
  </section>
 </div>
 
 <style>
-body:has(.landing-page) main.container{width:100%;max-width:none;margin:0;padding:0;min-height:0}
-body:has(.landing-page) footer{background:#17243a;color:#d5dce6;text-align:left;padding:28px 0;border:0}
-body:has(.landing-page) .nav{position:relative;background:#fff;backdrop-filter:none;padding:14px max(22px,calc((100% - 1290px)/2))}
-.landing-page{color:#17243a;background:#fff}.landing-page *{box-sizing:border-box}
-.landing-container{width:min(1290px,calc(100% - 80px));margin:auto}
-.landing-page .hero{background:#f5f8f4;padding:76px 0 78px}
-.landing-page .hero-grid{display:grid;grid-template-columns:1fr 1fr;gap:70px;align-items:center}
-.landing-page .eyebrow{display:inline-flex;align-items:center;gap:9px;background:#eaf5ee;color:#438264;padding:9px 13px;border-radius:30px;font-size:10px;font-weight:800;letter-spacing:.045em;text-transform:uppercase}
-.landing-page .dot{width:7px;height:7px;border-radius:50%;background:#56b889}
-.landing-page h1{font-size:clamp(42px,4.4vw,64px);line-height:1.12;letter-spacing:-.045em;margin:28px 0 22px;font-weight:800;max-width:650px}
-.landing-page .hero-copy{font-size:18px;line-height:1.6;color:#788391;max-width:570px;margin:0 0 30px}
-.landing-page .actions{display:flex;align-items:center;gap:16px;flex-wrap:wrap}
-.landing-page .primary{display:inline-flex;justify-content:center;border:0;background:#3159e8;color:#fff;padding:18px 24px;border-radius:12px;font-weight:700;cursor:pointer;box-shadow:0 8px 18px #3159e82b;transition:.2s;text-decoration:none}
-.landing-page .primary:hover{background:#244bd2;transform:translateY(-1px)}
-.landing-page .secondary{display:inline-block;padding:16px 18px;border:1px solid #e7ebea;border-radius:12px;background:#fff;color:#263449;font-weight:650;text-decoration:none}
-.landing-page .micro{display:flex;align-items:center;gap:12px;color:#8a939e;font-size:12px;margin-top:26px}
-.landing-page .bubbles{display:flex;gap:8px}.landing-page .bubbles i{width:25px;height:25px;border-radius:50%;display:block;background:#dce8ff}.landing-page .bubbles i:nth-child(2){background:#f6dfd0}.landing-page .bubbles i:nth-child(3){background:#d9eddf}
-.landing-page .quiz-wrap{display:flex;justify-content:flex-end}
-.landing-page .quiz{width:min(100%,510px);background:#fff;border-radius:26px;padding:34px;box-shadow:0 16px 38px rgba(25,39,63,.10)}
-.landing-page .quiz-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:24px}
-.landing-page .quiz-kicker{font-size:10px;color:#8b95a1;font-weight:800;letter-spacing:.06em}
-.landing-page .quiz-title{font-size:17px;font-weight:750;margin-top:5px}
-.landing-page .counter{background:#edf6ef;color:#5b8c6d;border-radius:30px;padding:8px 12px;font-size:12px;font-weight:800}
-.landing-page .word-panel{background:#f6f7fb;border-radius:17px;padding:24px;margin-bottom:18px}
-.landing-page .word-panel small{font-size:12px;color:#8791a0}
-.landing-page .word-panel strong{display:block;font-size:30px;letter-spacing:-.02em;margin:8px 0}
-.landing-page .word-panel p{font-size:12px;color:#9aa3ae;margin:0}
-.landing-page .choices{display:grid;grid-template-columns:1fr 1fr;gap:12px}
-.landing-page .choice{padding:14px 10px;border:1px solid #e6ece8;background:#eff8f2;color:#4c9870;border-radius:12px;font-weight:700;cursor:pointer;box-shadow:none}
-.landing-page .choice:last-child{background:#fff3f0;border-color:#f5e5e0;color:#d17e70}
-.landing-page .choice.selected{outline:2px solid currentColor;outline-offset:1px}
-.landing-page .answer-dropdown{display:none;margin-top:20px;padding:20px;background:#f6f8fc;border-radius:16px}
-.landing-page .answer-dropdown.active{display:block;animation:answerDropdownOpen .25s ease}
-@keyframes answerDropdownOpen{from{opacity:0;transform:translateY(-8px)}to{opacity:1;transform:translateY(0)}}
-.landing-page .field-label{font-size:11px;color:#7d8794;font-weight:800;letter-spacing:.04em;display:block;margin:0 0 9px}
-.landing-page .answer{width:100%;border:1px solid #e3e8ed;border-radius:12px;padding:16px 15px;outline:none;color:#17243a;font-size:14px;background:#fff}
-.landing-page .check{width:100%;margin-top:14px;padding:15px}
-.landing-page .feedback{min-height:20px;font-size:12px;line-height:1.5;margin-top:12px;color:#568b6d}
-.landing-page .quiz-foot{display:flex;align-items:center;gap:9px;font-size:11px;color:#8b95a1;margin-top:18px}
-.landing-page .coin{width:20px;height:20px;border-radius:50%;background:#fff0c8;flex:none}
-.landing-page .section{padding:90px 0}
-.landing-page .section-kicker{font-size:10px;letter-spacing:.07em;color:#3159e8;font-weight:850;text-transform:uppercase;margin-bottom:18px}
-.landing-page h2{font-size:clamp(30px,3vw,42px);letter-spacing:-.035em;line-height:1.16;margin:0 0 12px}
-.landing-page .section-intro{font-size:16px;color:#8993a0;line-height:1.55;margin:0;max-width:700px}
-.landing-page .features{display:grid;grid-template-columns:repeat(3,1fr);gap:18px;margin-top:42px}
-.landing-page .feature{border:1px solid #e9edf1;border-radius:22px;padding:28px 26px;min-height:180px;transition:.2s}
-.landing-page .feature:hover{transform:translateY(-3px);box-shadow:0 12px 28px #18243a0c}
-.landing-page .feature-icon{width:42px;height:42px;background:#edf1ff;border-radius:50%;margin-bottom:18px}
-.landing-page .feature h3{font-size:18px;margin:0 0 10px}
-.landing-page .feature p{font-size:14px;line-height:1.5;color:#8a94a0;margin:0;max-width:300px}
-.landing-page .route{background:#f0f6f0;padding:78px 0}
-.landing-page .route-grid{display:grid;grid-template-columns:.95fr 1.45fr;gap:60px;align-items:center}
-.landing-page .route-kicker{color:#438264}
-.landing-page .route-copy p{font-size:15px;color:#89948f;line-height:1.55;max-width:390px;margin-top:20px}
-.landing-page .steps{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
-.landing-page .step{background:#fff;border-radius:20px;padding:24px 20px;min-height:150px}
-.landing-page .step-num{font-size:12px;color:#3159e8;font-weight:850;margin-bottom:14px}
-.landing-page .step h3{font-size:17px;margin:0 0 9px}
-.landing-page .step p{font-size:13px;line-height:1.45;color:#8b95a0;margin:0}
-@media(max-width:900px){.landing-container{width:min(100% - 40px,700px)}.landing-page .hero-grid{gap:35px}.landing-page .hero{padding:60px 0}.landing-page .route-grid{gap:30px}}
-@media(max-width:680px){
- .landing-container{width:calc(100% - 36px)}.landing-page .hero{padding:48px 0}
- .landing-page .hero-grid{grid-template-columns:1fr;gap:42px}.landing-page h1{font-size:43px;margin-top:22px}
- .landing-page .hero-copy{font-size:16px}.landing-page .quiz-wrap{justify-content:center}
- .landing-page .quiz{max-width:500px;padding:23px;border-radius:20px}
- .landing-page .section{padding:64px 0}.landing-page .features{grid-template-columns:1fr;gap:12px;margin-top:28px}
- .landing-page .feature{min-height:0;padding:23px}.landing-page .route{padding:62px 0}
- .landing-page .route-grid{grid-template-columns:1fr;gap:28px}.landing-page .steps{grid-template-columns:1fr}
- .landing-page .step{min-height:0}
+/* ---------- Основные блоки страницы ---------- */
+
+body:has(.landing-page) main.container {
+    width: 100%;
+    max-width: none;
+    margin: 0;
+    padding: 0;
+    min-height: 0;
+}
+
+body:has(.landing-page) footer {
+    background: var(--bg-1);
+    color: var(--muted);
+    text-align: left;
+    padding: 28px 0;
+    border-top: 1px solid var(--border);
+}
+
+body:has(.landing-page) .nav {
+    position: relative;
+    background: color-mix(in srgb, var(--bg-0) 90%, transparent);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    padding: 14px max(22px, calc((100% - 1290px) / 2));
+    border-bottom: 1px solid var(--border);
+}
+
+.landing-page {
+    color: var(--fg);
+    background: var(--bg-0);
+}
+
+.landing-page * {
+    box-sizing: border-box;
+}
+
+.landing-container {
+    width: min(1290px, calc(100% - 80px));
+    margin: auto;
+}
+
+/* ---------- Первый экран ---------- */
+
+.landing-page .hero {
+    background: var(--bg-1);
+    padding: 76px 0 78px;
+}
+
+.landing-page .hero-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 70px;
+    align-items: center;
+}
+
+.landing-page .eyebrow {
+    display: inline-flex;
+    align-items: center;
+    gap: 9px;
+    background: var(--good-alert-bg);
+    color: var(--good);
+    padding: 9px 13px;
+    border-radius: 30px;
+    font-size: 10px;
+    font-weight: 800;
+    letter-spacing: .045em;
+    text-transform: uppercase;
+}
+
+.landing-page .dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: var(--good);
+}
+
+.landing-page h1 {
+    font-size: clamp(42px, 4.4vw, 64px);
+    line-height: 1.12;
+    letter-spacing: -.045em;
+    margin: 28px 0 22px;
+    font-weight: 800;
+    max-width: 650px;
+    color: var(--fg);
+}
+
+.landing-page .hero-copy {
+    font-size: 18px;
+    line-height: 1.6;
+    color: var(--muted);
+    max-width: 570px;
+    margin: 0 0 30px;
+}
+
+.landing-page .actions {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    flex-wrap: wrap;
+}
+
+.landing-page .primary {
+    display: inline-flex;
+    justify-content: center;
+    border: 0;
+    background: var(--accent);
+    color: var(--accent-text-on);
+    padding: 18px 24px;
+    border-radius: 12px;
+    font-weight: 700;
+    cursor: pointer;
+    box-shadow: var(--shadow-accent);
+    transition: .2s;
+    text-decoration: none;
+}
+
+.landing-page .primary:hover {
+    background: var(--accent);
+    filter: brightness(1.1);
+    transform: translateY(-1px);
+}
+
+.landing-page .secondary {
+    display: inline-block;
+    padding: 16px 18px;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    background: var(--card);
+    color: var(--fg-dim);
+    font-weight: 650;
+    text-decoration: none;
+    transition: background .2s, color .2s;
+}
+
+.landing-page .secondary:hover {
+    background: var(--card-hi);
+    color: var(--fg);
+}
+
+.landing-page .micro {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    color: var(--muted);
+    font-size: 12px;
+    margin-top: 26px;
+}
+
+.landing-page .bubbles {
+    display: flex;
+    gap: 8px;
+}
+
+.landing-page .bubbles i {
+    width: 25px;
+    height: 25px;
+    border-radius: 50%;
+    display: block;
+    background: var(--accent-glow);
+}
+
+.landing-page .bubbles i:nth-child(2) {
+    background: var(--good-alert-bg);
+}
+
+.landing-page .bubbles i:nth-child(3) {
+    background: var(--bad-alert-bg);
+}
+
+/* ---------- Демонстрационный квиз ---------- */
+
+.landing-page .quiz-wrap {
+    display: flex;
+    justify-content: flex-end;
+}
+
+.landing-page .quiz {
+    width: min(100%, 510px);
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 26px;
+    padding: 34px;
+    box-shadow: var(--shadow);
+}
+
+.landing-page .quiz-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 24px;
+}
+
+.landing-page .quiz-kicker {
+    font-size: 10px;
+    color: var(--muted);
+    font-weight: 800;
+    letter-spacing: .06em;
+}
+
+.landing-page .quiz-title {
+    font-size: 17px;
+    font-weight: 750;
+    margin-top: 5px;
+    color: var(--fg);
+}
+
+.landing-page .counter {
+    background: var(--good-alert-bg);
+    color: var(--good);
+    border-radius: 30px;
+    padding: 8px 12px;
+    font-size: 12px;
+    font-weight: 800;
+}
+
+.landing-page .word-panel {
+    background: var(--input-bg);
+    border: 1px solid var(--border);
+    border-radius: 17px;
+    padding: 24px;
+    margin-bottom: 18px;
+}
+
+.landing-page .word-panel small {
+    font-size: 12px;
+    color: var(--muted);
+}
+
+.landing-page .word-panel strong {
+    display: block;
+    font-size: 30px;
+    letter-spacing: -.02em;
+    margin: 8px 0;
+    color: var(--fg);
+}
+
+.landing-page .word-panel p {
+    font-size: 12px;
+    color: var(--muted);
+    margin: 0;
+}
+
+.landing-page .choices {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+}
+
+.landing-page .choice {
+    padding: 14px 10px;
+    border: 1px solid var(--good-alert-bd);
+    background: var(--good-alert-bg);
+    color: var(--good);
+    border-radius: 12px;
+    font-weight: 700;
+    cursor: pointer;
+    box-shadow: none;
+}
+
+.landing-page .choice:last-child {
+    background: var(--bad-alert-bg);
+    border-color: var(--bad-alert-bd);
+    color: var(--bad);
+}
+
+.landing-page .choice:hover {
+    filter: brightness(1.08);
+    box-shadow: none;
+}
+
+.landing-page .choice.selected {
+    outline: 2px solid currentColor;
+    outline-offset: 1px;
+}
+
+.landing-page .answer-dropdown {
+    display: none;
+    margin-top: 20px;
+    padding: 20px;
+    background: var(--card-hi);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+}
+
+.landing-page .answer-dropdown.active {
+    display: block;
+    animation: answerDropdownOpen .25s ease;
+}
+
+@keyframes answerDropdownOpen {
+    from {
+        opacity: 0;
+        transform: translateY(-8px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.landing-page .field-label {
+    font-size: 11px;
+    color: var(--muted);
+    font-weight: 800;
+    letter-spacing: .04em;
+    display: block;
+    margin: 0 0 9px;
+}
+
+.landing-page .answer {
+    width: 100%;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 16px 15px;
+    outline: none;
+    color: var(--fg);
+    font-size: 14px;
+    background: var(--input-bg);
+}
+
+.landing-page .answer:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px var(--accent-glow);
+}
+
+.landing-page .check {
+    width: 100%;
+    margin-top: 14px;
+    padding: 15px;
+}
+
+.landing-page .feedback {
+    min-height: 20px;
+    font-size: 12px;
+    line-height: 1.5;
+    margin-top: 12px;
+    color: var(--good);
+}
+
+.landing-page .quiz-foot {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    font-size: 11px;
+    color: var(--muted);
+    margin-top: 18px;
+}
+
+.landing-page .coin {
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: var(--good-alert-bg);
+    border: 1px solid var(--good-alert-bd);
+    flex: none;
+}
+
+/* ---------- Преимущества ---------- */
+
+.landing-page .section {
+    padding: 90px 0;
+    background: var(--bg-0);
+}
+
+.landing-page .section-kicker {
+    font-size: 10px;
+    letter-spacing: .07em;
+    color: var(--accent);
+    font-weight: 850;
+    text-transform: uppercase;
+    margin-bottom: 18px;
+}
+
+.landing-page h2 {
+    font-size: clamp(30px, 3vw, 42px);
+    letter-spacing: -.035em;
+    line-height: 1.16;
+    margin: 0 0 12px;
+    color: var(--fg);
+}
+
+.landing-page .section-intro {
+    font-size: 16px;
+    color: var(--muted);
+    line-height: 1.55;
+    margin: 0;
+    max-width: 700px;
+}
+
+.landing-page .features {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 18px;
+    margin-top: 42px;
+}
+
+.landing-page .feature {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 22px;
+    padding: 28px 26px;
+    min-height: 180px;
+    transition: .2s;
+}
+
+.landing-page .feature:hover {
+    transform: translateY(-3px);
+    box-shadow: var(--shadow);
+    border-color: var(--border-hi);
+}
+
+.landing-page .feature-icon {
+    width: 42px;
+    height: 42px;
+    background: var(--accent-glow);
+    border-radius: 50%;
+    margin-bottom: 18px;
+}
+
+.landing-page .feature h3 {
+    font-size: 18px;
+    margin: 0 0 10px;
+    color: var(--fg);
+}
+
+.landing-page .feature p {
+    font-size: 14px;
+    line-height: 1.5;
+    color: var(--muted);
+    margin: 0;
+    max-width: 300px;
+}
+
+/* ---------- Этапы ---------- */
+
+.landing-page .route {
+    background: var(--bg-1);
+    padding: 78px 0;
+}
+
+.landing-page .route-grid {
+    display: grid;
+    grid-template-columns: .95fr 1.45fr;
+    gap: 60px;
+    align-items: center;
+}
+
+.landing-page .route-kicker {
+    color: var(--good);
+}
+
+.landing-page .route-copy p {
+    font-size: 15px;
+    color: var(--muted);
+    line-height: 1.55;
+    max-width: 390px;
+    margin-top: 20px;
+}
+
+.landing-page .steps {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 14px;
+}
+
+.landing-page .step {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 24px 20px;
+    min-height: 150px;
+}
+
+.landing-page .step-num {
+    font-size: 12px;
+    color: var(--accent);
+    font-weight: 850;
+    margin-bottom: 14px;
+}
+
+.landing-page .step h3 {
+    font-size: 17px;
+    margin: 0 0 9px;
+    color: var(--fg);
+}
+
+.landing-page .step p {
+    font-size: 13px;
+    line-height: 1.45;
+    color: var(--muted);
+    margin: 0;
+}
+
+/* ---------- Адаптация ---------- */
+
+@media (max-width: 900px) {
+    .landing-container {
+        width: min(100% - 40px, 700px);
+    }
+
+    .landing-page .hero-grid {
+        gap: 35px;
+    }
+
+    .landing-page .hero {
+        padding: 60px 0;
+    }
+
+    .landing-page .route-grid {
+        gap: 30px;
+    }
+}
+
+@media (max-width: 680px) {
+    .landing-container {
+        width: calc(100% - 36px);
+    }
+
+    .landing-page .hero {
+        padding: 48px 0;
+    }
+
+    .landing-page .hero-grid {
+        grid-template-columns: 1fr;
+        gap: 42px;
+    }
+
+    .landing-page h1 {
+        font-size: 43px;
+        margin-top: 22px;
+    }
+
+    .landing-page .hero-copy {
+        font-size: 16px;
+    }
+
+    .landing-page .quiz-wrap {
+        justify-content: center;
+    }
+
+    .landing-page .quiz {
+        max-width: 500px;
+        padding: 23px;
+        border-radius: 20px;
+    }
+
+    .landing-page .section {
+        padding: 64px 0;
+    }
+
+    .landing-page .features {
+        grid-template-columns: 1fr;
+        gap: 12px;
+        margin-top: 28px;
+    }
+
+    .landing-page .feature {
+        min-height: 0;
+        padding: 23px;
+    }
+
+    .landing-page .route {
+        padding: 62px 0;
+    }
+
+    .landing-page .route-grid {
+        grid-template-columns: 1fr;
+        gap: 28px;
+    }
+
+    .landing-page .steps {
+        grid-template-columns: 1fr;
+    }
+
+    .landing-page .step {
+        min-height: 0;
+    }
 }
 </style>
 
