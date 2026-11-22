@@ -1,4 +1,3 @@
-
 {% extends "base.html" %}
 {% block title %}Админ-панель{% endblock %}
 {% block content %}
@@ -10,6 +9,7 @@
     </div>
     <span class="admin-console-badge">ADMIN ACCESS</span>
   </div>
+
   <div class="console-window">
     <div class="console-window-bar">
       <div class="console-lights" aria-hidden="true"><i></i><i></i><i></i></div>
@@ -20,8 +20,10 @@
 {% if console_result.is_error %}[ОШИБКА]{% else %}[ВЫПОЛНЕНО]{% endif %}
 {{ console_result.output }}{% else %}КОНСОЛЬ ГОТОВА
 Введите help, чтобы посмотреть список команд.
+
 admin@kod-yazyka:~$ _{% endif %}</pre>
   </div>
+
   <form method="post" action="{{ url_for('admin_console') }}" class="console-form">
     <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
     <label for="console-command">Команда</label>
@@ -37,6 +39,7 @@ admin@kod-yazyka:~$ _{% endif %}</pre>
       <code>games</code>. Для опасных действий добавляйте <code>confirm</code>.
     </p>
   </form>
+
   {% if console_history %}
     <details class="console-history">
       <summary>История команд (последние 8)</summary>
@@ -63,11 +66,13 @@ admin@kod-yazyka:~$ _{% endif %}</pre>
     </details>
   {% endif %}
 </section>
+
 <section class="card">
   <div class="row between">
     <h2>Пользователи</h2>
     <p class="muted admin-summary">Всего: {{ users|length }} · Сыграно игр: {{ games_count }}</p>
   </div>
+
   <div class="table-wrap admin-users-table">
     <table>
       <thead>
@@ -93,33 +98,21 @@ admin@kod-yazyka:~$ _{% endif %}</pre>
                   {{ 'Снять админа' if u.is_admin else 'Сделать админом' }}
                 </button>
               </form>
+
               <form method="post" action="{{ url_for('admin_reset_stats', uid=u.id) }}">
                 <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
                 <button class="btn ghost small" type="submit">Сброс стат.</button>
               </form>
+
               <details>
                 <summary class="btn ghost small">Пароль</summary>
                 <form method="post" action="{{ url_for('admin_set_password', uid=u.id) }}" class="admin-password-form">
                   <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
-                  <input
-                    type="password"
-                    name="new_password"
-                    placeholder="новый пароль"
-                    required
-                    minlength="12"
-                    maxlength="1024"
-                    autocomplete="new-password"
-                  >
-                  <div class="row admin-password-actions">
-                    <button class="btn small" type="submit">Сменить</button>
-                    <button
-                      class="btn ghost small"
-                      type="button"
-                      data-cancel-password
-                    >Отмена</button>
-                  </div>
+                  <input type="password" name="new_password" placeholder="новый пароль" required minlength="12" maxlength="1024" autocomplete="new-password">
+                  <button class="btn small" type="submit">Сменить</button>
                 </form>
               </details>
+
               <form method="post" action="{{ url_for('admin_delete_user', uid=u.id) }}">
                 <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
                 <button class="btn danger small" type="submit" {% if u.id == g.user.id %}disabled{% endif %}>
