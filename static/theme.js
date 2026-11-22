@@ -1,24 +1,67 @@
+"use strict";
+
 (function () {
-  var form = document.getElementById('theme-form');
-  var btn  = document.getElementById('theme-toggle-btn');
-  if (!form || !btn) return;
+    // Подтверждение действий перед отправкой формы.
+    document.querySelectorAll("form[data-confirm]").forEach(function (form) {
+        form.addEventListener("submit", function (event) {
+            const message = form.getAttribute("data-confirm");
 
-  form.addEventListener('submit', function (e) {
-    e.preventDefault();
+            if (message && !window.confirm(message)) {
+                event.preventDefault();
+            }
+        });
+    });
 
-    var html    = document.documentElement;
-    var current = html.getAttribute('data-theme') || 'dark';
-    var next    = current === 'light' ? 'dark' : 'light';
+    // Отмена смены пароля: очищаем поле и закрываем раскрывающуюся форму.
+    document.querySelectorAll("[data-cancel-password]").forEach(function (button) {
+        button.addEventListener("click", function () {
+            const details = button.closest("details");
 
-    html.setAttribute('data-theme', next);
-    btn.textContent = next === 'light' ? '🌙' : '☀️';
+            if (!details) {
+                return;
+            }
 
-    var meta = document.querySelector('meta[name="theme-color"]');
-    if (meta) meta.content = next === 'light' ? '#eef2fa' : '#0a0e1a';
+            const form = details.querySelector("form");
+            if (form) {
+                form.reset();
+            }
 
-    var secure = location.protocol === 'https:' ? '; Secure' : '';
-    document.cookie =
-      'theme=' + next +
-      '; path=/; max-age=31536000; SameSite=Lax' + secure;
-  });
+            details.open = false;
+
+            const summary = details.querySelector("summary");
+            if (summary) {
+                summary.focus();
+            }
+        });
+    });
+
+    // Переключение темы без перезагрузки страницы.
+    const form = document.getElementById("theme-form");
+    const btn = document.getElementById("theme-toggle-btn");
+
+    if (!form || !btn) {
+        return;
+    }
+
+    form.addEventListener("submit", function (event) {
+        event.preventDefault();
+
+        const html = document.documentElement;
+        const current = html.getAttribute("data-theme") || "dark";
+        const next = current === "light" ? "dark" : "light";
+
+        html.setAttribute("data-theme", next);
+        btn.textContent = next === "light" ? "🌙" : "☀️";
+
+        const meta = document.querySelector('meta[name="theme-color"]');
+        if (meta) {
+            meta.content = next === "light" ? "#eef2fa" : "#0a0e1a";
+        }
+
+        const secure = location.protocol === "https:" ? "; Secure" : "";
+
+        document.cookie =
+            "theme=" + next +
+            "; path=/; max-age=31536000; SameSite=Lax" + secure;
+    });
 })();

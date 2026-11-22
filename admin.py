@@ -1,25 +1,43 @@
 import sqlite3
 
 from flask import (
-    current_app, flash, g, redirect, render_template, request, url_for,
+    abort,
+    current_app,
+    flash,
+    g,
+    redirect,
+    render_template,
+    request,
+    url_for,
 )
 from werkzeug.security import generate_password_hash
 
 from config import PASSWORD_MIN_LENGTH, PASSWORD_MAX_LENGTH
 from security import load_session_user, revoke_user_sessions
-
 from admin_console import execute_admin_command
 from db import get_db
-from utils import admin_required, check_csrf
+from utils import admin_required, owner_required, check_csrf
 
 
 def _assert_admin_in_transaction(db):
     """Повторно проверяет роль и серверную сессию после блокировки БД."""
     fresh_user = load_session_user()
+
     if fresh_user is None or not fresh_user["is_admin"]:
         db.rollback()
-        from flask import abort
         abort(403)
+
+    g.user = fresh_user
+
+
+def _assert_owner_in_transaction(db):
+    """Повторно проверяет право владельца после блокировки БД."""
+    fresh_user = load_session_user()
+
+    if fresh_user is None or fresh_user["role"] != "owner":
+        db.rollback()
+        abort(403)
+
     g.user = fresh_user
 
 
@@ -27,31 +45,81 @@ def register_routes(app):
     @app.route("/admin")
     @admin_required
     def admin():
-        """Показывает панель управления, консоль и список пользователей."""
+        """Показывает панель управления и список пользователей."""
         db = get_db()
+
         users = db.execute(
-            """SELECT id, username, is_admin, best_score, correct_total, wrong_total, created_at
-               FROM users ORDER BY id"""
+            """
+            SELECT
+                u.id,
+                u.username,
+                u.is_admin,
+                u.role,
+                u.best_score,
+                u.correct_total,
+                u.wrong_total,
+                u.created_at,
+                (
+                    SELECT COUNT(*)
+                    FROM games AS game
+                    WHERE game.user_id=u.id
+                ) AS games_count
+            FROM users AS u
+            ORDER BY
+                CASE u.role
+                    WHEN 'owner' THEN 0
+                    WHEN 'admin' THEN 1
+                    ELSE 2
+                END,
+                u.id
+            """
         ).fetchall()
-        games_count = db.execute("SELECT COUNT(*) FROM games").fetchone()[0]
-        console_log_id = request.args.get("console_log", type=int)
+
+        games_count = db.execute(
+            "SELECT COUNT(*) FROM games"
+        ).fetchone()[0]
+
         console_result = None
-        if console_log_id:
-            console_result = db.execute(
-                """SELECT l.*, COALESCE(u.username, 'удалённый администратор') AS admin_name
-                   FROM admin_logs AS l
-                   LEFT JOIN users AS u ON u.id=l.admin_id
-                   WHERE l.id=?""",
-                (console_log_id,),
-            ).fetchone()
-        console_history = db.execute(
-            """SELECT l.id, l.command, l.is_error, l.created_at,
-                      COALESCE(u.username, 'удалённый администратор') AS admin_name
-               FROM admin_logs AS l
-               LEFT JOIN users AS u ON u.id=l.admin_id
-               ORDER BY l.id DESC
-               LIMIT 8"""
-        ).fetchall()
+        console_history = []
+
+        # Обычные администраторы видят пользователей, но не консоль.
+        if g.user["role"] == "owner":
+            console_log_id = request.args.get("console_log", type=int)
+
+            if console_log_id:
+                console_result = db.execute(
+                    """
+                    SELECT
+                        l.*,
+                        COALESCE(
+                            u.username,
+                            'удалённый администратор'
+                        ) AS admin_name
+                    FROM admin_logs AS l
+                    LEFT JOIN users AS u ON u.id=l.admin_id
+                    WHERE l.id=?
+                    """,
+                    (console_log_id,),
+                ).fetchone()
+
+            console_history = db.execute(
+                """
+                SELECT
+                    l.id,
+                    l.command,
+                    l.is_error,
+                    l.created_at,
+                    COALESCE(
+                        u.username,
+                        'удалённый администратор'
+                    ) AS admin_name
+                FROM admin_logs AS l
+                LEFT JOIN users AS u ON u.id=l.admin_id
+                ORDER BY l.id DESC
+                LIMIT 8
+                """
+            ).fetchall()
+
         return render_template(
             "admin.html",
             users=users,
@@ -61,34 +129,60 @@ def register_routes(app):
         )
 
     @app.route("/admin/console", methods=["POST"])
-    @admin_required
+    @owner_required
     def admin_console():
-        """Выполняет ограниченную команду и сохраняет её в журнале."""
+        """Выполняет ограниченную команду владельца и сохраняет её в журнале."""
         check_csrf()
+
         command = request.form.get("command", "").strip()
         db = get_db()
 
         try:
-            # Сериализуем админские операции, чтобы одновременно не снять права
-            # у нескольких последних администраторов.
+            # Сериализуем административные операции.
             db.execute("BEGIN IMMEDIATE")
-            _assert_admin_in_transaction(db)
+            _assert_owner_in_transaction(db)
+
             if len(command) > 200:
-                output, is_error = "ОШИБКА: команда должна содержать не более 200 символов.", True
+                output = "ОШИБКА: команда должна содержать не более 200 символов."
+                is_error = True
             else:
-                output, is_error = execute_admin_command(db, command, g.user["id"])
+                output, is_error = execute_admin_command(
+                    db,
+                    command,
+                    g.user["id"],
+                )
+
             db.execute(
-                """INSERT INTO admin_logs (admin_id, command, output, is_error)
-                   VALUES (?, ?, ?, ?)""",
-                (g.user["id"], command[:200], output[:12000], int(is_error)),
+                """
+                INSERT INTO admin_logs (admin_id, command, output, is_error)
+                VALUES (?, ?, ?, ?)
+                """,
+                (
+                    g.user["id"],
+                    command[:200],
+                    output[:12000],
+                    int(is_error),
+                ),
             )
-            log_id = db.execute("SELECT last_insert_rowid()").fetchone()[0]
+
+            log_id = db.execute(
+                "SELECT last_insert_rowid()"
+            ).fetchone()[0]
+
             db.commit()
+
         except sqlite3.Error:
             if db.in_transaction:
                 db.rollback()
-            current_app.logger.exception("Ошибка административной консоли")
-            flash("Не удалось выполнить команду. Подробности записаны в журнал сервера.", "error")
+
+            current_app.logger.exception(
+                "Ошибка административной консоли"
+            )
+
+            flash(
+                "Не удалось выполнить команду. Подробности записаны в журнал сервера.",
+                "error",
+            )
             return redirect(url_for("admin"))
 
         return redirect(url_for("admin", console_log=log_id))
@@ -96,56 +190,132 @@ def register_routes(app):
     @app.route("/admin/user/<int:uid>/delete", methods=["POST"])
     @admin_required
     def admin_delete_user(uid):
-        """Удаляет пользователя, сохраняя хотя бы одного администратора."""
+        """Удаляет пользователя с учётом его роли."""
         check_csrf()
+
         if uid == g.user["id"]:
-            flash("Нельзя удалить себя", "error")
+            flash("Нельзя удалить собственный аккаунт.", "error")
             return redirect(url_for("admin"))
+
         db = get_db()
         db.execute("BEGIN IMMEDIATE")
         _assert_admin_in_transaction(db)
-        target = db.execute("SELECT id, is_admin FROM users WHERE id=?", (uid,)).fetchone()
+
+        target = db.execute(
+            "SELECT id, role FROM users WHERE id=?",
+            (uid,),
+        ).fetchone()
+
         if target is None:
             db.rollback()
-            flash("Пользователь не найден", "error")
+            flash("Пользователь не найден.", "error")
             return redirect(url_for("admin"))
-        if target["is_admin"] and db.execute(
-            "SELECT COUNT(*) FROM users WHERE is_admin=1"
-        ).fetchone()[0] <= 1:
+
+        if target["role"] == "owner":
             db.rollback()
-            flash("Нельзя удалить последнего администратора", "error")
+            flash("Аккаунт владельца нельзя удалить.", "error")
             return redirect(url_for("admin"))
-        db.execute("DELETE FROM users WHERE id=?", (uid,))
+
+        if target["role"] == "admin" and g.user["role"] != "owner":
+            db.rollback()
+            flash(
+                "Администратор не может удалять другие административные аккаунты.",
+                "error",
+            )
+            return redirect(url_for("admin"))
+
+        if target["role"] == "admin":
+            admins_count = db.execute(
+                "SELECT COUNT(*) FROM users WHERE is_admin=1"
+            ).fetchone()[0]
+
+            if admins_count <= 1:
+                db.rollback()
+                flash("Нельзя удалить последнего администратора.", "error")
+                return redirect(url_for("admin"))
+
+        db.execute(
+            "DELETE FROM users WHERE id=?",
+            (uid,),
+        )
         db.commit()
-        flash("Пользователь удалён", "ok")
+
+        flash("Пользователь удалён.", "ok")
         return redirect(url_for("admin"))
 
     @app.route("/admin/user/<int:uid>/toggle_admin", methods=["POST"])
-    @admin_required
+    @owner_required
     def admin_toggle_admin(uid):
-        """Переключает права администратора у выбранного пользователя."""
+        """Назначает администратором или возвращает обычную роль."""
         check_csrf()
-        if uid == g.user["id"]:
-            flash("Нельзя изменить свою роль", "error")
+
+        desired_role = request.form.get("role", "").strip()
+
+        if desired_role not in ("user", "admin"):
+            flash("Недопустимая роль пользователя.", "error")
             return redirect(url_for("admin"))
+
+        if uid == g.user["id"]:
+            flash("Нельзя изменить собственную роль.", "error")
+            return redirect(url_for("admin"))
+
         db = get_db()
         db.execute("BEGIN IMMEDIATE")
-        _assert_admin_in_transaction(db)
-        target = db.execute("SELECT id, is_admin FROM users WHERE id=?", (uid,)).fetchone()
+        _assert_owner_in_transaction(db)
+
+        target = db.execute(
+            "SELECT id, username, role FROM users WHERE id=?",
+            (uid,),
+        ).fetchone()
+
         if target is None:
             db.rollback()
-            flash("Пользователь не найден", "error")
+            flash("Пользователь не найден.", "error")
             return redirect(url_for("admin"))
-        if target["is_admin"] and db.execute(
-            "SELECT COUNT(*) FROM users WHERE is_admin=1"
-        ).fetchone()[0] <= 1:
+
+        if target["role"] == "owner":
             db.rollback()
-            flash("Нельзя снять права у последнего администратора", "error")
+            flash("Нельзя изменить роль владельца.", "error")
             return redirect(url_for("admin"))
-        db.execute("UPDATE users SET is_admin = 1 - is_admin WHERE id=?", (uid,))
+
+        if target["role"] == desired_role:
+            db.rollback()
+            flash("У пользователя уже установлена эта роль.", "ok")
+            return redirect(url_for("admin"))
+
+        if target["role"] == "admin" and desired_role == "user":
+            admins_count = db.execute(
+                "SELECT COUNT(*) FROM users WHERE is_admin=1"
+            ).fetchone()[0]
+
+            if admins_count <= 1:
+                db.rollback()
+                flash(
+                    "Нельзя снять права у последнего администратора.",
+                    "error",
+                )
+                return redirect(url_for("admin"))
+
+        db.execute(
+            """
+            UPDATE users
+            SET role=?, is_admin=?
+            WHERE id=?
+            """,
+            (
+                desired_role,
+                int(desired_role == "admin"),
+                uid,
+            ),
+        )
+
         revoke_user_sessions(uid)
         db.commit()
-        flash("Роль пользователя обновлена", "ok")
+
+        flash(
+            f"Роль пользователя {target['username']} обновлена.",
+            "ok",
+        )
         return redirect(url_for("admin"))
 
     @app.route("/admin/user/<int:uid>/reset_stats", methods=["POST"])
@@ -153,22 +323,53 @@ def register_routes(app):
     def admin_reset_stats(uid):
         """Сбрасывает статистику и игровые данные пользователя."""
         check_csrf()
+
         db = get_db()
         db.execute("BEGIN IMMEDIATE")
         _assert_admin_in_transaction(db)
-        target = db.execute("SELECT id FROM users WHERE id=?", (uid,)).fetchone()
+
+        target = db.execute(
+            "SELECT id, role FROM users WHERE id=?",
+            (uid,),
+        ).fetchone()
+
         if target is None:
             db.rollback()
-            flash("Пользователь не найден", "error")
+            flash("Пользователь не найден.", "error")
             return redirect(url_for("admin"))
+
+        if (
+            target["role"] in ("admin", "owner")
+            and g.user["role"] != "owner"
+        ):
+            db.rollback()
+            flash(
+                "Администратор может изменять статистику только обычных пользователей.",
+                "error",
+            )
+            return redirect(url_for("admin"))
+
         db.execute(
-            "UPDATE users SET best_score=0, correct_total=0, wrong_total=0 WHERE id=?",
+            """
+            UPDATE users
+            SET best_score=0, correct_total=0, wrong_total=0
+            WHERE id=?
+            """,
             (uid,),
         )
-        db.execute("DELETE FROM games WHERE user_id=?", (uid,))
-        db.execute("DELETE FROM active_games WHERE user_id=?", (uid,))
+
+        db.execute(
+            "DELETE FROM games WHERE user_id=?",
+            (uid,),
+        )
+        db.execute(
+            "DELETE FROM active_games WHERE user_id=?",
+            (uid,),
+        )
+
         db.commit()
-        flash("Статистика сброшена", "ok")
+
+        flash("Статистика сброшена.", "ok")
         return redirect(url_for("admin"))
 
     @app.route("/admin/user/<int:uid>/password", methods=["POST"])
@@ -176,25 +377,53 @@ def register_routes(app):
     def admin_set_password(uid):
         """Устанавливает новый пароль выбранному пользователю."""
         check_csrf()
+
         new_password = request.form.get("new_password", "")
-        if not PASSWORD_MIN_LENGTH <= len(new_password) <= PASSWORD_MAX_LENGTH:
+
+        if not (
+            PASSWORD_MIN_LENGTH <= len(new_password) <= PASSWORD_MAX_LENGTH
+        ):
             flash(
-                f"Пароль: от {PASSWORD_MIN_LENGTH} до {PASSWORD_MAX_LENGTH} символов",
+                f"Пароль: от {PASSWORD_MIN_LENGTH} до {PASSWORD_MAX_LENGTH} символов.",
                 "error",
             )
             return redirect(url_for("admin"))
+
         db = get_db()
         db.execute("BEGIN IMMEDIATE")
         _assert_admin_in_transaction(db)
-        cursor = db.execute(
+
+        target = db.execute(
+            "SELECT id, role FROM users WHERE id=?",
+            (uid,),
+        ).fetchone()
+
+        if target is None:
+            db.rollback()
+            flash("Пользователь не найден.", "error")
+            return redirect(url_for("admin"))
+
+        if (
+            target["role"] in ("admin", "owner")
+            and g.user["role"] != "owner"
+        ):
+            db.rollback()
+            flash(
+                "Администратор может менять пароли только обычным пользователям.",
+                "error",
+            )
+            return redirect(url_for("admin"))
+
+        db.execute(
             "UPDATE users SET password_hash=? WHERE id=?",
             (generate_password_hash(new_password), uid),
         )
-        if not cursor.rowcount:
-            db.rollback()
-            flash("Пользователь не найден", "error")
-            return redirect(url_for("admin"))
+
         revoke_user_sessions(uid)
         db.commit()
-        flash("Пароль обновлён. Все сессии пользователя завершены.", "ok")
+
+        flash(
+            "Пароль обновлён. Все сессии пользователя завершены.",
+            "ok",
+        )
         return redirect(url_for("admin"))

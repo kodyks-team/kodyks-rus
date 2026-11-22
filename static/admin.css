@@ -1,0 +1,281 @@
+/* ---------- Таблица пользователей ---------- */
+
+.admin-users-card {
+    overflow: hidden;
+}
+
+.admin-users-heading {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 16px;
+    margin-bottom: 18px;
+}
+
+.admin-users-heading h1 {
+    margin-bottom: 6px;
+}
+
+.admin-user-kpis {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(125px, 1fr));
+    gap: 10px;
+    margin: 18px 0;
+}
+
+.admin-user-kpi {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    padding: 13px 15px;
+    min-width: 0;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    background:
+        linear-gradient(180deg, var(--hover-soft), transparent),
+        var(--input-bg);
+}
+
+.admin-user-kpi span {
+    color: var(--muted);
+    font-size: .75rem;
+    font-weight: 700;
+    letter-spacing: .04em;
+    text-transform: uppercase;
+}
+
+.admin-user-kpi strong {
+    color: var(--fg);
+    font-size: 1.45rem;
+    font-weight: 800;
+    font-variant-numeric: tabular-nums;
+}
+
+.admin-users-wrap {
+    overflow-x: auto;
+    border-radius: 13px;
+}
+
+.admin-users-grid {
+    width: 100%;
+    min-width: 1050px;
+    border-collapse: separate;
+    border-spacing: 0;
+    font-size: .88rem;
+}
+
+.admin-users-grid th {
+    padding: 13px 12px;
+    white-space: nowrap;
+}
+
+.admin-users-grid td {
+    padding: 13px 12px;
+}
+
+.admin-users-grid .admin-user-row:last-child td {
+    border-bottom: 0;
+}
+
+.admin-user-row {
+    transition: background .15s ease;
+}
+
+.admin-user-row.is-current td {
+    background: var(--hover-row);
+}
+
+.admin-user-id {
+    color: var(--muted);
+    font-family: var(--mono);
+    font-size: .82rem;
+    white-space: nowrap;
+}
+
+.admin-user-account {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 7px;
+    min-width: 120px;
+}
+
+.admin-user-account strong {
+    color: var(--fg);
+    font-weight: 700;
+    overflow-wrap: anywhere;
+}
+
+.admin-current-user {
+    padding: 3px 7px;
+    border-radius: 6px;
+    color: var(--accent);
+    background: var(--accent-glow);
+    font-size: .7rem;
+    font-weight: 700;
+}
+
+.admin-role-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 5px 8px;
+    border: 1px solid var(--border);
+    border-radius: 7px;
+    font-size: .75rem;
+    font-weight: 700;
+    white-space: nowrap;
+}
+
+.admin-role-badge.role-owner {
+    color: #b58bff;
+    background: rgba(154, 107, 255, .12);
+    border-color: rgba(154, 107, 255, .35);
+}
+
+.admin-role-badge.role-admin {
+    color: var(--accent);
+    background: var(--accent-glow);
+    border-color: var(--border-hi);
+}
+
+.admin-role-badge.role-user {
+    color: var(--muted);
+    background: var(--hover-soft);
+}
+
+.admin-number {
+    color: var(--fg-dim);
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+}
+
+.admin-created-at {
+    color: var(--muted);
+    font-size: .78rem;
+    white-space: nowrap;
+}
+
+.admin-user-actions {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 9px;
+    min-width: 190px;
+}
+
+.admin-role-form {
+    display: grid;
+    gap: 6px;
+    padding: 10px;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    background: var(--hover-soft);
+}
+
+.admin-role-form label {
+    margin: 0;
+    font-size: .72rem;
+}
+
+.admin-role-form select {
+    width: 100%;
+    min-width: 0;
+    padding: 9px 10px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    background: var(--input-bg);
+    color: var(--fg);
+    font: inherit;
+}
+
+.admin-role-form select:focus {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+}
+
+.admin-action-form {
+    margin: 0;
+}
+
+.admin-action-form button {
+    width: 100%;
+}
+
+.admin-password-details {
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    background: var(--hover-soft);
+    padding: 8px;
+}
+
+.admin-password-details > summary {
+    display: flex;
+    width: 100%;
+    list-style: none;
+    cursor: pointer;
+}
+
+.admin-password-details > summary::-webkit-details-marker {
+    display: none;
+}
+
+.admin-password-details[open] > summary {
+    margin-bottom: 10px;
+}
+
+.admin-password-form {
+    display: grid;
+    gap: 8px;
+    margin: 0;
+}
+
+.admin-password-form label {
+    margin: 0;
+    font-size: .75rem;
+}
+
+.admin-password-form input[type="password"] {
+    min-width: 0;
+    padding: 10px 12px;
+    font-size: .9rem;
+}
+
+.admin-form-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 7px;
+}
+
+.admin-form-actions button {
+    flex: 1 1 auto;
+}
+
+.admin-users-empty {
+    margin-top: 16px;
+    text-align: center;
+}
+
+@media (max-width: 560px) {
+    .admin-users-heading {
+        flex-direction: column;
+    }
+
+    .admin-user-kpis {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .admin-users-grid {
+        min-width: 1000px;
+    }
+
+    .admin-user-actions {
+        min-width: 175px;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .admin-user-row {
+        transition: none;
+    }
+}

@@ -1,130 +1,357 @@
 {% extends "base.html" %}
+
 {% block title %}Админ-панель{% endblock %}
+
+{% block head_scripts %}
+<link
+  rel="stylesheet"
+  href="{{ url_for('static', filename='admin.css', v='20261122-1') }}"
+>
+{% endblock %}
+
 {% block content %}
+
+{% if g.user.role == 'owner' %}
 <section class="card admin-console-card">
   <div class="row between admin-section-heading">
     <div>
       <h1>Административная консоль</h1>
-      <p class="muted">Командное управление сайтом. Выполняются только поддерживаемые команды — shell и произвольный SQL недоступны.</p>
+      <p class="muted">
+        Командное управление сайтом. Выполняются только поддерживаемые команды —
+        shell и произвольный SQL недоступны.
+      </p>
     </div>
-    <span class="admin-console-badge">ADMIN ACCESS</span>
+    <span class="admin-console-badge">OWNER ACCESS</span>
   </div>
 
   <div class="console-window">
     <div class="console-window-bar">
-      <div class="console-lights" aria-hidden="true"><i></i><i></i><i></i></div>
+      <div class="console-lights" aria-hidden="true">
+        <i></i><i></i><i></i>
+      </div>
       <span>kod-yazyka · admin console</span>
       <span class="console-secure">защищённое соединение</span>
     </div>
+
     <pre class="console-output" aria-live="polite">{% if console_result %}admin@kod-yazyka:~$ {{ console_result.command }}
 {% if console_result.is_error %}[ОШИБКА]{% else %}[ВЫПОЛНЕНО]{% endif %}
 {{ console_result.output }}{% else %}КОНСОЛЬ ГОТОВА
 Введите help, чтобы посмотреть список команд.
-
 admin@kod-yazyka:~$ _{% endif %}</pre>
   </div>
 
-  <form method="post" action="{{ url_for('admin_console') }}" class="console-form">
+  <form
+    method="post"
+    action="{{ url_for('admin_console') }}"
+    class="console-form"
+  >
     <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
+
     <label for="console-command">Команда</label>
+
     <div class="console-command-row">
       <span class="console-prompt" aria-hidden="true">$</span>
-      <input id="console-command" type="text" name="command" maxlength="200"
-             autocomplete="off" autocapitalize="off" spellcheck="false"
-             placeholder="help" aria-describedby="console-hint" required>
+
+      <input
+        id="console-command"
+        type="text"
+        name="command"
+        maxlength="200"
+        autocomplete="off"
+        autocapitalize="off"
+        spellcheck="false"
+        placeholder="help"
+        aria-describedby="console-hint"
+        required
+      >
+
       <button type="submit">Выполнить</button>
     </div>
+
     <p class="muted console-hint" id="console-hint">
-      Примеры: <code>status</code>, <code>users 20</code>, <code>user 5</code>,
-      <code>games</code>. Для опасных действий добавляйте <code>confirm</code>.
+      Примеры: <code>status</code>, <code>users 20</code>,
+      <code>user 5</code>, <code>games</code>.
+      Для опасных действий добавляйте <code>confirm</code>.
     </p>
   </form>
 
   {% if console_history %}
     <details class="console-history">
       <summary>История команд (последние 8)</summary>
+
       <div class="table-wrap">
         <table>
           <thead>
-            <tr><th>Время</th><th>Администратор</th><th>Команда</th><th>Результат</th></tr>
-          </thead>
-          <tbody>
-          {% for item in console_history %}
             <tr>
-              <td>{{ item.created_at }}</td>
-              <td>{{ item.admin_name }}</td>
-              <td><a href="{{ url_for('admin', console_log=item.id) }}"><code>{{ item.command }}</code></a></td>
-              <td>
-                {% if item.is_error %}<span class="console-status error">ошибка</span>
-                {% else %}<span class="console-status success">выполнено</span>{% endif %}
-              </td>
+              <th>Время</th>
+              <th>Администратор</th>
+              <th>Команда</th>
+              <th>Результат</th>
             </tr>
-          {% endfor %}
+          </thead>
+
+          <tbody>
+            {% for item in console_history %}
+              <tr>
+                <td>{{ item.created_at }}</td>
+                <td>{{ item.admin_name }}</td>
+                <td>
+                  <a href="{{ url_for('admin', console_log=item.id) }}">
+                    <code>{{ item.command }}</code>
+                  </a>
+                </td>
+                <td>
+                  {% if item.is_error %}
+                    <span class="console-status error">ошибка</span>
+                  {% else %}
+                    <span class="console-status success">выполнено</span>
+                  {% endif %}
+                </td>
+              </tr>
+            {% endfor %}
           </tbody>
         </table>
       </div>
     </details>
   {% endif %}
 </section>
+{% endif %}
 
-<section class="card">
-  <div class="row between">
-    <h2>Пользователи</h2>
-    <p class="muted admin-summary">Всего: {{ users|length }} · Сыграно игр: {{ games_count }}</p>
+
+<section class="card admin-users-card">
+  <div class="admin-users-heading">
+    <div>
+      <h1>Пользователи</h1>
+      <p class="muted">
+        Управление аккаунтами и игровыми результатами.
+      </p>
+    </div>
+
+    <span class="admin-console-badge">
+      {% if g.user.role == 'owner' %}OWNER{% else %}ADMIN{% endif %}
+    </span>
   </div>
 
-  <div class="table-wrap admin-users-table">
-    <table>
+  {% set owner_count = users|selectattr('role', 'equalto', 'owner')|list|length %}
+  {% set admin_count = users|selectattr('role', 'equalto', 'admin')|list|length %}
+  {% set regular_count = users|selectattr('role', 'equalto', 'user')|list|length %}
+
+  <div class="admin-user-kpis">
+    <div class="admin-user-kpi">
+      <span>Всего аккаунтов</span>
+      <strong>{{ users|length }}</strong>
+    </div>
+
+    <div class="admin-user-kpi">
+      <span>Владелец</span>
+      <strong>{{ owner_count }}</strong>
+    </div>
+
+    <div class="admin-user-kpi">
+      <span>Администраторы</span>
+      <strong>{{ admin_count }}</strong>
+    </div>
+
+    <div class="admin-user-kpi">
+      <span>Пользователи</span>
+      <strong>{{ regular_count }}</strong>
+    </div>
+
+    <div class="admin-user-kpi">
+      <span>Завершено игр</span>
+      <strong>{{ games_count }}</strong>
+    </div>
+  </div>
+
+  <div class="table-wrap admin-users-wrap">
+    <table class="admin-users-grid">
       <thead>
         <tr>
-          <th>ID</th><th>Имя</th><th>Рекорд</th><th>✓</th><th>✗</th>
-          <th>Админ</th><th>Действия</th>
+          <th>ID</th>
+          <th>Аккаунт</th>
+          <th>Роль</th>
+          <th>Рекорд</th>
+          <th>Верно</th>
+          <th>Ошибки</th>
+          <th>Игры</th>
+          <th>Регистрация</th>
+          <th>Управление</th>
         </tr>
       </thead>
+
       <tbody>
-      {% for u in users %}
-        <tr>
-          <td>{{ u.id }}</td>
-          <td>{{ u.username }}</td>
-          <td>{{ u.best_score }}</td>
-          <td>{{ u.correct_total }}</td>
-          <td>{{ u.wrong_total }}</td>
-          <td>{{ 'да' if u.is_admin else '—' }}</td>
-          <td>
-            <div class="row admin-user-actions">
-              <form method="post" action="{{ url_for('admin_toggle_admin', uid=u.id) }}">
-                <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
-                <button class="btn ghost small" type="submit" {% if u.id == g.user.id %}disabled{% endif %}>
-                  {{ 'Снять админа' if u.is_admin else 'Сделать админом' }}
-                </button>
-              </form>
+        {% for u in users %}
+          <tr class="admin-user-row{% if u.id == g.user.id %} is-current{% endif %}">
+            <td class="admin-user-id">#{{ u.id }}</td>
 
-              <form method="post" action="{{ url_for('admin_reset_stats', uid=u.id) }}">
-                <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
-                <button class="btn ghost small" type="submit">Сброс стат.</button>
-              </form>
+            <td>
+              <div class="admin-user-account">
+                <strong>{{ u.username }}</strong>
 
-              <details>
-                <summary class="btn ghost small">Пароль</summary>
-                <form method="post" action="{{ url_for('admin_set_password', uid=u.id) }}" class="admin-password-form">
-                  <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
-                  <input type="password" name="new_password" placeholder="новый пароль" required minlength="12" maxlength="1024" autocomplete="new-password">
-                  <button class="btn small" type="submit">Сменить</button>
-                </form>
-              </details>
+                {% if u.id == g.user.id %}
+                  <span class="admin-current-user">Вы</span>
+                {% endif %}
+              </div>
+            </td>
 
-              <form method="post" action="{{ url_for('admin_delete_user', uid=u.id) }}">
-                <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
-                <button class="btn danger small" type="submit" {% if u.id == g.user.id %}disabled{% endif %}>
-                  Удалить
-                </button>
-              </form>
-            </div>
-          </td>
-        </tr>
-      {% endfor %}
+            <td>
+              {% if u.role == 'owner' %}
+                <span class="admin-role-badge role-owner">Владелец</span>
+              {% elif u.role == 'admin' %}
+                <span class="admin-role-badge role-admin">Администратор</span>
+              {% else %}
+                <span class="admin-role-badge role-user">Пользователь</span>
+              {% endif %}
+            </td>
+
+            <td class="admin-number">{{ u.best_score }}</td>
+            <td class="admin-number">{{ u.correct_total }}</td>
+            <td class="admin-number">{{ u.wrong_total }}</td>
+            <td class="admin-number">{{ u.games_count }}</td>
+
+            <td class="admin-created-at">{{ u.created_at }}</td>
+
+            <td>
+              {% if u.role != 'owner' and (g.user.role == 'owner' or u.role == 'user') %}
+                <div class="admin-user-actions">
+
+                  {% if g.user.role == 'owner' %}
+                    <form
+                      method="post"
+                      action="{{ url_for('admin_toggle_admin', uid=u.id) }}"
+                      class="admin-role-form"
+                    >
+                      <input
+                        type="hidden"
+                        name="_csrf"
+                        value="{{ csrf_token() }}"
+                      >
+
+                      <label for="role-{{ u.id }}">Роль</label>
+
+                      <select id="role-{{ u.id }}" name="role">
+                        <option
+                          value="user"
+                          {% if u.role == 'user' %}selected{% endif %}
+                        >
+                          Пользователь
+                        </option>
+
+                        <option
+                          value="admin"
+                          {% if u.role == 'admin' %}selected{% endif %}
+                        >
+                          Администратор
+                        </option>
+                      </select>
+
+                      <button class="btn ghost small" type="submit">
+                        Сохранить роль
+                      </button>
+                    </form>
+                  {% endif %}
+
+                  <form
+                    method="post"
+                    action="{{ url_for('admin_reset_stats', uid=u.id) }}"
+                    data-confirm="Сбросить статистику пользователя {{ u.username }}? Игры и результаты будут удалены."
+                    class="admin-action-form"
+                  >
+                    <input
+                      type="hidden"
+                      name="_csrf"
+                      value="{{ csrf_token() }}"
+                    >
+
+                    <button class="btn ghost small" type="submit">
+                      Сбросить статистику
+                    </button>
+                  </form>
+
+                  <details class="admin-password-details">
+                    <summary class="btn ghost small">
+                      Изменить пароль
+                    </summary>
+
+                    <form
+                      method="post"
+                      action="{{ url_for('admin_set_password', uid=u.id) }}"
+                      class="admin-password-form"
+                    >
+                      <input
+                        type="hidden"
+                        name="_csrf"
+                        value="{{ csrf_token() }}"
+                      >
+
+                      <label for="password-{{ u.id }}">
+                        Новый пароль
+                      </label>
+
+                      <input
+                        id="password-{{ u.id }}"
+                        type="password"
+                        name="new_password"
+                        placeholder="Новый пароль"
+                        required
+                        minlength="12"
+                        maxlength="1024"
+                        autocomplete="new-password"
+                      >
+
+                      <div class="admin-form-actions">
+                        <button class="btn small" type="submit">
+                          Сохранить
+                        </button>
+
+                        <button
+                          class="btn ghost small"
+                          type="button"
+                          data-cancel-password
+                        >
+                          Отмена
+                        </button>
+                      </div>
+                    </form>
+                  </details>
+
+                  {% if u.id != g.user.id %}
+                    <form
+                      method="post"
+                      action="{{ url_for('admin_delete_user', uid=u.id) }}"
+                      data-confirm="Удалить аккаунт {{ u.username }}? Это действие нельзя отменить."
+                      class="admin-action-form"
+                    >
+                      <input
+                        type="hidden"
+                        name="_csrf"
+                        value="{{ csrf_token() }}"
+                      >
+
+                      <button class="btn danger small" type="submit">
+                        Удалить аккаунт
+                      </button>
+                    </form>
+                  {% endif %}
+
+                </div>
+              {% elif u.role == 'owner' %}
+                <span class="muted">Защищённый аккаунт</span>
+              {% else %}
+                <span class="muted">Нет доступных действий</span>
+              {% endif %}
+            </td>
+          </tr>
+        {% endfor %}
       </tbody>
     </table>
   </div>
+
+  {% if not users %}
+    <p class="muted admin-users-empty">
+      Пользователей пока нет.
+    </p>
+  {% endif %}
 </section>
+
 {% endblock %}
