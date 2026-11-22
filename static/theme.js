@@ -1,38 +1,61 @@
+
 "use strict";
 
 (function () {
-    // Подтверждение действий перед отправкой формы.
-    document.querySelectorAll("form[data-confirm]").forEach(function (form) {
-        form.addEventListener("submit", function (event) {
-            const message = form.getAttribute("data-confirm");
+    // Подтверждение отправки форм с атрибутом data-confirm.
+    document.addEventListener("submit", function (event) {
+        const form = event.target;
 
-            if (message && !window.confirm(message)) {
-                event.preventDefault();
-            }
-        });
+        if (!(form instanceof HTMLFormElement)) {
+            return;
+        }
+
+        const message = form.getAttribute("data-confirm");
+
+        if (message && !window.confirm(message)) {
+            event.preventDefault();
+        }
     });
 
-    // Отмена смены пароля: очищаем поле и закрываем раскрывающуюся форму.
-    document.querySelectorAll("[data-cancel-password]").forEach(function (button) {
-        button.addEventListener("click", function () {
-            const details = button.closest("details");
+    // Отмена смены пароля.
+    document.addEventListener("click", function (event) {
+        const target = event.target;
 
-            if (!details) {
-                return;
-            }
+        if (!(target instanceof Element)) {
+            return;
+        }
 
-            const form = details.querySelector("form");
-            if (form) {
-                form.reset();
-            }
+        const button = target.closest("[data-cancel-password]");
 
-            details.open = false;
+        if (!button) {
+            return;
+        }
 
-            const summary = details.querySelector("summary");
-            if (summary) {
-                summary.focus();
-            }
-        });
+        const details = button.closest("details");
+
+        if (!details) {
+            return;
+        }
+
+        const passwordForm = details.querySelector(".admin-password-form");
+
+        if (passwordForm) {
+            passwordForm.reset();
+
+            passwordForm
+                .querySelectorAll('input[type="password"]')
+                .forEach(function (input) {
+                    input.value = "";
+                });
+        }
+
+        details.open = false;
+
+        const summary = details.querySelector("summary");
+
+        if (summary) {
+            summary.focus();
+        }
     });
 
     // Переключение темы без перезагрузки страницы.
@@ -54,6 +77,7 @@
         btn.textContent = next === "light" ? "🌙" : "☀️";
 
         const meta = document.querySelector('meta[name="theme-color"]');
+
         if (meta) {
             meta.content = next === "light" ? "#eef2fa" : "#0a0e1a";
         }
